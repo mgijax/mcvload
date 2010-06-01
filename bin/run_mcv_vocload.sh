@@ -107,8 +107,7 @@ checkStatus ${STAT} "${VOCLOAD}/runOBOFullLoad.sh ${CONFIG_LOAD}"
 
 echo "Moving SO ID association to MCV term to SO ldb"
 
-cat - <<EOSQL | isql -S${MGD_DBSERVER} -D${MGD_DBNAME} -U${MGI_PUBLICUSER} -P`ca
-t ${MGI_PUBPASSWORDFILE}` -e  >> ${LOG}
+cat - <<EOSQL | isql -S${MGD_DBSERVER} -D${MGD_DBNAME} -U${MGI_PUBLICUSER} -P`ca ${MGI_PUBPASSWORDFILE}` -e  >> ${LOG}
 
 select _Accession_key
 into #so
