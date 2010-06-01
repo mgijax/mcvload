@@ -1,0 +1,8 @@
+TAG: mcvload-4-3-4-1
+DATE: 06/01/2010
+STAFF: sc
+CHANGES: TR6839 Marker Types
+1) Latest incarnation including moving SO IDs to 
+   another logical DB.
+2) QC stuff in config file, but QC scripts not yet
+   checked int

@@ -1,0 +1,16 @@
+#!/bin/csh -f
+
+#
+# defaults for MCV annotation load
+#
+
+setenv ANNOTDATADIR	/mgi/all/wts_projects/6800/6839/data
+setenv ANNOTMODE	new
+#setenv ANNOTMODE	preview
+setenv ANNOTTYPENAME	"MCV/Marker"
+setenv ANNOTINPUTFILE	${ANNOTDATADIR}/annot_test_small.txt
+setenv ANNOTLOG		${ANNOTINPUTFILE}.log
+setenv DELETEREFERENCE  "J:159278" # the MCV reference
+setenv DELETEUSER	"mcvload"
+setenv ANNOTOBSOLETE	0
+

@@ -1,0 +1,148 @@
+#format: sh
+#
+#  mcvload.config
+#
+#  This file sets up environment variables that are needed for 
+#  the Marker Type Ontology annotation load
+#
+###########################################################################
+
+###########################################################################
+#
+#  GENERAL SETTINGS
+#
+###########################################################################
+
+#
+#  If the MGICONFIG environment variable does not have a local override,
+#  use the default "live" settings.
+#
+if [ "${MGICONFIG}" = "" ]
+then
+    MGICONFIG=/usr/local/mgi/live/mgiconfig
+    #MGICONFIG=/home/sc/work/mgiconfig
+    export MGICONFIG
+fi
+
+. ${MGICONFIG}/master.config.sh
+
+#  Annotation Load Script
+ANNOTLOAD_CSH=${ANNOTLOAD}/annotload.csh
+
+CONFIG_ANNOTLOAD=${MCVLOAD}/annotload.csh.config
+
+export VOCLOAD_SH CONFIG_VOCLOAD ANNOTLOAD_CSH CONFIG_ANNOTLOAD
+
+###########################################################################
+#
+#  LOAD SPECIFIC SETTINGS
+#
+###########################################################################
+
+#  Path name of the archive, logs, reports and output directories
+FILEDIR=${DATALOADSOUTPUT}/mcv/mcvload
+ARCHIVEDIR=${FILEDIR}/archive
+LOGDIR=${FILEDIR}/logs
+RPTDIR=${FILEDIR}/reports
+OUTPUTDIR=${FILEDIR}/output
+INPUTDIR=${FILEDIR}/input
+
+export FILEDIR ARCHIVEDIR LOGDIR RPTDIR OUTPUTDIR INPUTDIR
+
+# Full path to the default input file.
+#
+INPUT_FILE_DEFAULT=${INPUTDIR}/mcvload.txt
+
+export INPUT_FILE_DEFAULT
+
+# Full path to the "cleaned up" QC-ready input file that is created and used
+# by the sanity/QC report script.
+#
+INPUT_FILE_QC=${OUTPUTDIR}/mcvload_qc.txt
+
+export INPUT_FILE_QC
+
+# Full path to the bcp file for loading the input file into the temp table.
+#
+INPUT_FILE_BCP=${OUTPUTDIR}/mcvload_temp.bcp
+
+export INPUT_FILE_BCP
+
+# Full path to the load-ready annotation file that is created by the
+# sanity/QC report script and used as input by the annotation loader.
+#
+ANNOT_FILE=${OUTPUTDIR}/mcvload_annot.txt
+
+export ANNOT_FILE
+
+# Full path to the log files.
+#
+MCVLOADQC_LOGFILE=${LOGDIR}/mcvloadQC.log
+MCVLOAD_LOGFILE=${LOGDIR}/mcvload.log
+
+export MCVLOADQC_LOGFILE MCVLOAD_LOGFILE
+
+# Full path to the sanity/QC reports.
+#
+SANITY_RPT=${RPTDIR}/sanity.rpt
+INVALID_MARKER_RPT=${RPTDIR}/invalid_marker.rpt
+SEC_MARKER_RPT=${RPTDIR}/secondary_marker.rpt
+INVALID_MCVID_RPT=${RPTDIR}/invalid_mcvid.rpt
+
+export SANITY_RPT
+export INVALID_MARKER_RPT SEC_MARKER_RPT INVALID_MCVID_RPT 
+
+# Number of columns expected for the input file (for sanity check).
+#
+MCVLOAD_FILE_COLUMNS=10
+
+export MCVLOAD_FILE_COLUMNS
+
+# Temp table that will be loaded from the input file.
+#
+MCVLOAD_TEMP_TABLE=MCVLoad
+
+export MCVLOAD_TEMP_TABLE
+
+# Full path to scripts.
+#
+MCVLOAD_QC_S=${MCVLOADLOAD}/bin/mcvloadQC.sh
+MCVLOAD_QC=${MCVLOADLOAD}/bin/mcvloadQC.py
+MCVLOAD_LOADER_SH=${MCVLOADLOAD}/bin/mcvload.sh
+
+export MCVLOAD_QC_SH MCVLOAD_QC MCVLOAD_LOADER_SH
+
+# Complete path name of the log files
+LOG_FILE=${LOGDIR}/mcvload.log
+LOG_PROC=${LOGDIR}/mcvload.proc.log
+LOG_DIAG=${LOGDIR}/mcvload.diag.log
+LOG_CUR=${LOGDIR}/mcvload.cur.log
+LOG_VAL=${LOGDIR}/mcvload.val.log
+
+#  Send debug messages to the diagnostic log (true or false)
+LOG_DEBUG=false
+
+export LOG_FILE LOG_PROC LOG_DIAG LOG_CUR LOG_VAL LOG_DEBUG
+
+#  The name of the job stream for the load
+JOBSTREAM=mcvload
+
+export JOBSTREAM
+
+###########################################################################
+#
+#  MISCELLANEOUS SETTINGS
+#
+###########################################################################
+
+#  The name of the load for the subject of an email notification
+MAIL_LOADNAME="Marker Type Ontology Annotation Load"
+
+#  Recipient list for mailing the log files (comma-separated)
+#MAIL_LOG_PROC="mgiadmin"
+MAIL_LOG_PROC="sc"
+
+export MAIL_LOADNAME MAIL_LOG_PROC
+
+INSTALLDIR=${MCVLOAD}
+export INSTALLDIR
