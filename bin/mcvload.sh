@@ -111,28 +111,6 @@ ${ANNOTLOAD_CSH} ${CONFIG_ANNOTLOAD} >> ${LOG_DIAG}
 STAT=$?
 checkStatus ${STAT} "${ANNOTLOAD_CSH} ${CONFIG_ANNOT}"
 
-echo "Moving SO ID association to MCV term to SO ldb"
-
-cat - <<EOSQL | isql -S${MGD_DBSERVER} -D${MGD_DBNAME} -U${MGI_PUBLICUSER} -P`cat ${MGI_PUBPASSWORDFILE}` -e  >> ${LOG}
-
-select _Accession_key
-into #so
-from ACC_Accession
-where _MGIType_key = 13
-and preferred = 0
-and _LogicalDB_key = 146
-and prefixPart = "SO:"
-go
-
-update ACC_Accession
-set a._LogicalDB_key = 145
-from ACC_Accession a, #so s
-where a._Accession_key = s._Accession_key
-go
-
-quit
-EOSQL
-
 #
 # run postload cleanup and email logs
 #
