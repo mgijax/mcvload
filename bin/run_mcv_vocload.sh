@@ -1,12 +1,12 @@
 #!/bin/sh -x
 #
-#  run_mcv_vocabload.sh
+#  run_mcv_vocload.sh
 ###########################################################################
 #
 #  Purpose:
 # 	This script optionally runs the Marker Category Vocab (MCV) Load
 #
-  Usage=run_mcv_vocabload.sh
+  Usage=run_mcv_vocload.sh
 #
 #  Env Vars:
 #
@@ -22,8 +22,9 @@
 #  Outputs:
 #
 #      - An archive file
-#      - Log files defined by the environment variables ${LOG_PROC},
-#        ${LOG_DIAG}, ${LOG_CUR} and ${LOG_VAL}
+#      - Log file for the script defined by ${LOG}, note update output goes 
+#	 to this log
+#      - Log file for this wrapper ${LOG_RUNVOCLOAD}
 #      - vocload logs and bcp files  - see vocload/MCV.config
 #      - Records written to the database tables
 #      - Exceptions written to standard error
@@ -45,7 +46,7 @@
 #
 
 cd `dirname $0`
-LOG=`pwd`/mcvload.log
+LOG=`pwd`/run_mcv_vocload.log
 rm -rf ${LOG}
 
 CONFIG_LOAD=../mcvload.config
@@ -61,15 +62,6 @@ then
 fi
 
 . ${CONFIG_LOAD}
-
-#
-# Verify annotation configuration file
-#
-if [ ! -r ${CONFIG_ANNOTLOAD} ]
-then
-   echo "Cannot read configuration file: ${CONFIG_ANNOTLOAD}"
-    exit 1
-fi
 
 #
 #  Source the DLA library functions.
@@ -89,6 +81,22 @@ else
     exit 1
 fi
 
+#
+# Verify and source the vocload configuration file
+#
+CONFIG_VOCLOAD=${VOCLOAD}/MCV.config
+
+if [ ! -r ${CONFIG_VOCLOAD} ]
+then
+   echo "Cannot read configuration file: ${CONFIG_VOCLOAD}"
+    exit 1
+fi
+
+. ${CONFIG_VOCLOAD}
+
+LOG_RUNVOCLOAD=${RUNTIME_DIR}/runvocload.log
+rm -rf LOG_RUNVOCLOAD
+
 #####################################
 #
 # Main
@@ -98,16 +106,16 @@ fi
 #
 # run vocabulary load
 #
-echo "Running MCV Vocabulary load"  >> ${LOG_DIAG}
-CONFIG_LOAD=${VOCLOAD}/MCV.config
+echo "Running MCV Vocabulary load"  | tee -a ${LOG_RUNVOCLOAD}
+CONFIG_VOCLOAD=${VOCLOAD}/MCV.config
 
-${VOCLOAD}/runOBOIncLoad.sh ${CONFIG_LOAD} >> ${LOG_DIAG}
+${VOCLOAD}/runOBOIncLoad.sh ${CONFIG_VOCLOAD} >> ${LOG_RUNVOCLOAD}
 STAT=$?
-checkStatus ${STAT} "${VOCLOAD}/runOBOFullLoad.sh ${CONFIG_LOAD}"
+checkStatus ${STAT} "${VOCLOAD}/runOBOFullLoad.sh ${CONFIG_VOCLOAD}"
 
-echo "Moving SO ID association to MCV term to SO ldb"
+echo "Moving SO ID association to MCV term to SO ldb" | tee -a ${LOG_RUNVOCLOAD}
 
-cat - <<EOSQL | isql -S${MGD_DBSERVER} -D${MGD_DBNAME} -U${MGI_PUBLICUSER} -P`cat ${MGI_PUBPASSWORDFILE}` -e  >> ${LOG}
+cat - <<EOSQL | isql -S${MGD_DBSERVER} -D${MGD_DBNAME} -U${MGI_DBUSER} -P`cat ${MGI_DBPASSWORDFILE}` -e  >> ${LOG_RUNVOCLOAD}
 
 select _Accession_key
 into #so
@@ -119,12 +127,14 @@ and prefixPart = "SO:"
 go
 
 update ACC_Accession
-set a._LogicalDB_key = 145
+set a._LogicalDB_key = 145, a.preferred = 1, private = 1
 from ACC_Accession a, #so s
 where a._Accession_key = s._Accession_key
 go
 
 quit
 EOSQL
+
+echo 'Done moving SO ID to SO ldb' | tee -a ${LOG_RUNVOCLOAD}
 
 exit 0

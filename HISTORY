@@ -1,3 +1,10 @@
+TAG: mcvload-4-3-4-2
+DATE: 06/15/2010
+STAFF: sc
+CHANGES: TR6839 Marker Types
+1)urun_mcv_vocload.sh - Added separate log in vocload 
+runTimeMCV directory
+
 TAG: mcvload-4-3-4-1
 DATE: 06/01/2010
 STAFF: sc
