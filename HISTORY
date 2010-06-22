@@ -1,8 +1,14 @@
+TAG: mcvload-4-3-4-3
+DATE: 06/22/2010
+STAFF: sc
+CHANGES: TR6839 Marker Types
+1) Added bin scripts and config files
+
 TAG: mcvload-4-3-4-2
 DATE: 06/15/2010
 STAFF: sc
 CHANGES: TR6839 Marker Types
-1)urun_mcv_vocload.sh - Added separate log in vocload 
+1)run_mcv_vocload.sh - Added separate log in vocload 
 runTimeMCV directory
 
 TAG: mcvload-4-3-4-1
