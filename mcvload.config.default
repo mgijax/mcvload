@@ -1,6 +1,6 @@
 #format: sh
 #
-#  mcvload.config
+#  mcvload.config.default
 #
 #  This file sets up environment variables that are needed for 
 #  the Marker Type Ontology annotation load
@@ -20,7 +20,6 @@
 if [ "${MGICONFIG}" = "" ]
 then
     MGICONFIG=/usr/local/mgi/live/mgiconfig
-    #MGICONFIG=/home/sc/work/mgiconfig
     export MGICONFIG
 fi
 
@@ -87,10 +86,17 @@ export MCVLOADQC_LOGFILE MCVLOAD_LOGFILE
 SANITY_RPT=${RPTDIR}/sanity.rpt
 INVALID_MARKER_RPT=${RPTDIR}/invalid_marker.rpt
 SEC_MARKER_RPT=${RPTDIR}/secondary_marker.rpt
-INVALID_MCVID_RPT=${RPTDIR}/invalid_mcvid.rpt
+INVALID_TERMID_RPT=${RPTDIR}/invalid_mcvid.rpt
+INVALID_JNUM_RPT=${RPTDIR}/invalid_jnum.rpt
+INVALID_EVID_RPT=${RPTDIR}/invalid_evid.rpt
+INVALID_EDITOR_RPT=${RPTDIR}/invalid_editor.rpt
+MULTIPLE_MCV_RPT=${RPTDIR}/multiple_mcv.rpt
+BEFORE_AFTER_RPT=${RPTDIR}/before_after.rpt
 
 export SANITY_RPT
-export INVALID_MARKER_RPT SEC_MARKER_RPT INVALID_MCVID_RPT 
+export INVALID_MARKER_RPT SEC_MARKER_RPT INVALID_TERMID_RPT 
+export INVALID_JNUM_RPT INVALID_EVID_RPT INVALID_EDITOR_RPT
+export MULTIPLE_MCV_RPT BEFORE_AFTER_RPT
 
 # Number of columns expected for the input file (for sanity check).
 #
@@ -106,11 +112,10 @@ export MCVLOAD_TEMP_TABLE
 
 # Full path to scripts.
 #
-MCVLOAD_QC_S=${MCVLOADLOAD}/bin/mcvloadQC.sh
-MCVLOAD_QC=${MCVLOADLOAD}/bin/mcvloadQC.py
-MCVLOAD_LOADER_SH=${MCVLOADLOAD}/bin/mcvload.sh
+MCVLOAD_QC=${MCVLOAD}/bin/mcvQC.py
+MCVLOAD_LOADER_SH=${MCVLOAD}/bin/mcvload.sh
 
-export MCVLOAD_QC_SH MCVLOAD_QC MCVLOAD_LOADER_SH
+export MCVLOAD_QC_SH MCVLOAD_QC 
 
 # Complete path name of the log files
 LOG_FILE=${LOGDIR}/mcvload.log
