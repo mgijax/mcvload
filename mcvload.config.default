@@ -76,8 +76,8 @@ export ANNOT_FILE
 
 # Full path to the log files.
 #
-MCVLOADQC_LOGFILE=${LOGDIR}/mcvloadQC.log
-MCVLOAD_LOGFILE=${LOGDIR}/mcvload.log
+MCVLOADQC_LOGFILE=${LOGDIR}/mcvQC.log
+MCVLOAD_LOGFILE=${LOGDIR}/mcv.log
 
 export MCVLOADQC_LOGFILE MCVLOAD_LOGFILE
 
@@ -92,11 +92,12 @@ INVALID_EVID_RPT=${RPTDIR}/invalid_evid.rpt
 INVALID_EDITOR_RPT=${RPTDIR}/invalid_editor.rpt
 MULTIPLE_MCV_RPT=${RPTDIR}/multiple_mcv.rpt
 BEFORE_AFTER_RPT=${RPTDIR}/before_after.rpt
+RPT_NAMES_RPT=${RPTDIR}/reportsWithDiscrepancies.rpt
 
 export SANITY_RPT
 export INVALID_MARKER_RPT SEC_MARKER_RPT INVALID_TERMID_RPT 
 export INVALID_JNUM_RPT INVALID_EVID_RPT INVALID_EDITOR_RPT
-export MULTIPLE_MCV_RPT BEFORE_AFTER_RPT
+export MULTIPLE_MCV_RPT BEFORE_AFTER_RPT RPT_NAMES_RPT
 
 # Number of columns expected for the input file (for sanity check).
 #

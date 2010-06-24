@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh 
 #
 #  mcvQC.sh
 ###########################################################################
@@ -147,20 +147,20 @@ then
     BEFORE_AFTER_RPT=${CURRENTDIR}/`basename ${BEFORE_AFTER_RPT}`
 fi
 
-echo "CURRENTDIR:         ${CURRENTDIR}"
-echo "INPUT_FILE_QC:      ${INPUT_FILE_QC}"
-echo "INPUT_FILE_BCP:     ${INPUT_FILE_BCP}"
-echo "ANNOT_FILE:         ${ANNOT_FILE}"
-echo "MCVLOADQC_LOGFILE:   ${MCVLOADQC_LOGFILE}"
-echo "SANITY_RPT:         ${SANITY_RPT}"
-echo "INVALID_MARKER_RPT: ${INVALID_MARKER_RPT}"
-echo "SEC_MARKER_RPT:     ${SEC_MARKER_RPT}"
-echo "INVALID_TERMID_RPT:    ${INVALID_TERMID_RPT}"
-echo "INVALID_JNUM_RPT:	${INVALID_JNUM_RPT}"
-echo "INVALID_EVID_RPT:	${INVALID_EVID_RPT}"
-echo "INVALID_EDITOR_RPT:	${INVALID_EDITOR_RPT}"
-echo "MULTIPLE_MCV_RPT:	${MULTIPLE_MCV_RPT}"
-echo "BEFORE_AFTER_RPT: ${BEFORE_AFTER_RPT}"
+#echo "CURRENTDIR:         ${CURRENTDIR}"
+#echo "INPUT_FILE_QC:      ${INPUT_FILE_QC}"
+#echo "INPUT_FILE_BCP:     ${INPUT_FILE_BCP}"
+#echo "ANNOT_FILE:         ${ANNOT_FILE}"
+#echo "MCVLOADQC_LOGFILE:   ${MCVLOADQC_LOGFILE}"
+#echo "SANITY_RPT:         ${SANITY_RPT}"
+#echo "INVALID_MARKER_RPT: ${INVALID_MARKER_RPT}"
+#echo "SEC_MARKER_RPT:     ${SEC_MARKER_RPT}"
+#echo "INVALID_TERMID_RPT:    ${INVALID_TERMID_RPT}"
+#echo "INVALID_JNUM_RPT:	${INVALID_JNUM_RPT}"
+#echo "INVALID_EVID_RPT:	${INVALID_EVID_RPT}"
+#echo "INVALID_EDITOR_RPT:	${INVALID_EDITOR_RPT}"
+#echo "MULTIPLE_MCV_RPT:	${MULTIPLE_MCV_RPT}"
+#echo "BEFORE_AFTER_RPT: ${BEFORE_AFTER_RPT}"
 
 #
 # Initialize the log file.
@@ -172,7 +172,7 @@ touch ${LOG}
 #
 # Initialize the report files to make sure the current user can write to them.
 #
-RPT_LIST="${SANITY_RPT} ${INVALID_MARKER_RPT} ${SEC_MARKER_RPT} ${INVALID_TERMID_RPT} ${INVALID_JNUM_RPT} ${INVALID_EVID_RPT} ${INVALID_EDITOR_RPT}  ${MULTIPLE_MCV_RPT} ${BEFORE_AFTER_RPT}"
+RPT_LIST="${SANITY_RPT} ${INVALID_MARKER_RPT} ${SEC_MARKER_RPT} ${INVALID_TERMID_RPT} ${INVALID_JNUM_RPT} ${INVALID_EVID_RPT} ${INVALID_EDITOR_RPT}  ${MULTIPLE_MCV_RPT} ${BEFORE_AFTER_RPT} ${RPT_NAMES_RPT}"
 
 for i in ${RPT_LIST}
 do
@@ -237,7 +237,6 @@ then
     FILE_ERROR=1
 fi
 
-echo "MCVLOAD_FILE_COLUMNS: ${MCVLOAD_FILE_COLUMNS}"
 checkColumns ${INPUT_FILE_QC} ${SANITY_RPT} ${MCVLOAD_FILE_COLUMNS}
 if [ $? -ne 0 ]
 then
@@ -251,7 +250,7 @@ fi
 if [ ${FILE_ERROR} -ne 0 ]
 then
     echo "Sanity errors detected in input file" | tee -a ${LOG}
-    #rm -f ${INPUT_FILE_QC}
+    rm -f ${INPUT_FILE_QC}
     exit 1
 fi
 
@@ -308,18 +307,23 @@ EOSQL
 #
 echo "" >> ${LOG}
 date >> ${LOG}
-echo "Generate the QC reports" >> ${LOG}
+echo "\nGenerate the QC reports\n" | tee -a ${LOG}
 { ${MCVLOAD_QC} ${INPUT_FILE_QC} 2>&1; echo $? > ${TMP_FILE}; } >> ${LOG}
 if [ `cat ${TMP_FILE}` -eq 1 ]
 then
-    echo "An error occurred while generating the QC reports"
+    echo "A fatal error occurred while generating the QC reports"
     echo "See log file (${LOG})"
     RC=1
 elif [ `cat ${TMP_FILE}` -eq 2 ]
 then
-    echo "QC errors detected" | tee -a ${LOG}
+    cat ${RPT_NAMES_RPT} | tee -a ${LOG}
     RC=0
+elif [ `cat ${TMP_FILE}` -eq 3 ]
+then
+    cat ${RPT_NAMES_RPT} | tee -a ${LOG}
+    RC=1
 else
+    echo "QC reports successful, no errors" | tee -a ${LOG}
     RC=0
 fi
 
@@ -345,7 +349,7 @@ date >> ${LOG}
 #
 # Remove the QC-ready input file and the bcp file.
 #
-#rm -f ${INPUT_FILE_QC}
-#rm -f ${INPUT_FILE_BCP}
+rm -f ${INPUT_FILE_QC}
+rm -f ${INPUT_FILE_BCP}
 
 exit ${RC}

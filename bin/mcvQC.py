@@ -131,10 +131,14 @@ invEvidRptFile = os.environ['INVALID_EVID_RPT']
 invEditorRptFile = os.environ['INVALID_EDITOR_RPT']
 multiMcvRptFile = os.environ['MULTIPLE_MCV_RPT']
 beforeAfterRptFile =  os.environ['BEFORE_AFTER_RPT']
+rptNamesFile = os.environ['RPT_NAMES_RPT']
 
 timestamp = mgi_utils.date()
 
 errorCount = 0
+multiCt = 0
+fatalReportNames = []
+nonfatalReportNames = []
 
 # Looks like {mgiID:[ [annotAttributes1], ...], ...}
 # value is a list of lists, each list being the set
@@ -229,7 +233,6 @@ def init ():
     for r in results:
         mgiID = r['mgiID']
         termID = r['termID']
-        #print 'loading mgdMgiIdToTermIdDict mgiID: %s termID: %s' % (mgiID, termID)
         if not mgdMgiIdToTermIdDict.has_key(mgiID):
             mgdMgiIdToTermIdDict[mgiID] = []
         mgdMgiIdToTermIdDict[mgiID].append(termID)
@@ -265,7 +268,7 @@ def openFiles ():
     global fpInput, fpBCP
     global fpInvMrkRpt, fpSecMrkRpt, fpInvTermIdRpt
     global fpInvJNumRpt, fpInvEvidRpt, fpInvEditorRpt
-    global fpMultiMCVRpt, fpBeforeAfterRpt
+    global fpMultiMCVRpt, fpBeforeAfterRpt, fpRptNamesRpt
     #
     # Open the input file.
     #
@@ -327,6 +330,12 @@ def openFiles ():
     except:
         print 'Cannot open report file: ' + beforeAfterRptFile
         sys.exit(1)
+    try:
+        fpRptNamesRpt = open(rptNamesFile, 'a')
+    except:
+        print 'Cannot open report file: ' + rptNamesFile
+        sys.exit(1)
+
     return
 
 
@@ -368,12 +377,10 @@ def loadTempTable ():
     # write them to a bcp file.
     #
     line = fpInput.readline()
-    #print line
     count = 1
     while line:
         tokens = re.split(TAB, line[:-1])
         termID  = tokens[0]
-	#print '"' + termID + '"'
         mgiID = tokens[1]
 	jNum = tokens[2]
 	evidCode = tokens[3]
@@ -407,7 +414,6 @@ def loadTempTable ():
 	#
 	if termIDExists == 0 and jNumExists == 0 and evidCodeExists == 0 and inferFromExists == 0 \
 	    and editorExists == 0 and mgiIDExists > 0:
-	    print 'in loop'
 	    # check the MGI ID for format and continue
 	    if re.match('MGI:[0-9]+',mgiID) == None:
                 print 'Invalid MGI ID (line ' + str(count) + ')'
@@ -415,7 +421,6 @@ def loadTempTable ():
                 closeFiles()
                 sys.exit(1)
 	    # write out to the bcp file:
-	    print 'write out to bcp file: termID %s mgiID %s jNum %s evidCode %s editor %s' % (termID, mgiID, jNum, evidCode, editor)
 	    fpBCP.write(termID + TAB + mgiID + TAB + jNum +  TAB + evidCode + \
             TAB + editor + NL)
 
@@ -537,7 +542,7 @@ def loadTempTable ():
 # Throws: Nothing
 #
 def createInvMarkerReport ():
-    global annot, errorCount
+    global annot, errorCount, fatalReportNames
 
     print 'Create the invalid marker report'
     sys.stdout.flush()
@@ -641,11 +646,12 @@ def createInvMarkerReport ():
         #        if list.count(termID) > 0:
         #            list.remove(termID)
         #        annot[mgiID] = list
-
-    fpInvMrkRpt.write(NL + 'Number of Rows: ' + str(len(results[0])) + NL)
-
-    errorCount += len(results[0])
-
+    numErrors = len(results[0])
+    fpInvMrkRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
+    errorCount += numErrors
+    if numErrors > 0:
+        if not invMrkRptFile in fatalReportNames:
+            fatalReportNames.append(invMrkRptFile + NL)
     return
 
 
@@ -657,7 +663,7 @@ def createInvMarkerReport ():
 # Throws: Nothing
 #
 def createSecMarkerReport ():
-    global annot, errorCount
+    global annot, errorCount, fatalReportNames
 
     print 'Create the secondary marker report'
     sys.stdout.flush()
@@ -718,11 +724,12 @@ def createSecMarkerReport ():
         #        if list.count(termID) > 0:
         #            list.remove(termID)
         #        annot[mgiID] = list
-
-    fpSecMrkRpt.write(NL + 'Number of Rows: ' + str(len(results[0])) + NL)
-
-    errorCount += len(results[0])
-
+    numErrors = len(results[0])
+    fpSecMrkRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
+    errorCount += numErrors
+    if numErrors > 0:
+        if not secMrkRptFile in fatalReportNames:
+            fatalReportNames.append(secMrkRptFile + NL)
     return
 
 #
@@ -733,7 +740,7 @@ def createSecMarkerReport ():
 # Throws: Nothing
 #
 def createInvTermIdReport ():
-    global errorCount
+    global errorCount, fatalReportNames
 
     print 'Create the invalid Term ID report'
     sys.stdout.flush()
@@ -766,9 +773,12 @@ def createInvTermIdReport ():
         termID = r['termID']
         fpInvTermIdRpt.write('%-20s%s' % (termID, NL))
 
-    fpInvTermIdRpt.write(NL + 'Number of Rows: ' + str(len(results[0])) + NL)
-
-    errorCount += len(results[0])
+    numErrors = len(results[0])
+    fpInvTermIdRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
+    errorCount += numErrors
+    if numErrors > 0:
+        if not invTermIdRptFile in fatalReportNames:
+            fatalReportNames.append(invTermIdRptFile + NL)
 
     return
 
@@ -780,7 +790,7 @@ def createInvTermIdReport ():
 # Throws: Nothing
 #
 def createInvJNumReport ():
-    global errorCount
+    global errorCount, fatalReportNames
 
     print 'Create the invalid J Number report'
     sys.stdout.flush()
@@ -812,10 +822,14 @@ def createInvJNumReport ():
     for r in results[0]:
 	jNum = r['jNum']
 	fpInvJNumRpt.write('%-20s%s' % (jNum, NL))
-    
-    fpInvJNumRpt.write(NL + 'Number of Rows: ' + str(len(results[0])) + NL)
-    errorCount += len(results[0])
-
+   
+    numErrors = len(results[0])
+    fpInvJNumRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
+    errorCount += numErrors
+    if numErrors > 0:
+        if not invJNumRptFile in fatalReportNames:
+            fatalReportNames.append(invJNumRptFile + NL)
+ 
     return
 
 #
@@ -826,7 +840,7 @@ def createInvJNumReport ():
 # Throws: Nothing
 #
 def createInvEvidReport ():
-    global errorCount
+    global errorCount, fatalReportNames
 
     print 'Create the invalid evidence code report'
     sys.stdout.flush()
@@ -855,9 +869,12 @@ def createInvEvidReport ():
         evidCode = r['evidCode']
         fpInvEvidRpt.write('%-20s%s' % (evidCode, NL))
 
-    fpInvEvidRpt.write(NL + 'Number of Rows: ' + str(len(results[0])) + NL)
-
-    errorCount += len(results[0])
+    numErrors = len(results[0])
+    fpInvEvidRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
+    errorCount += numErrors
+    if numErrors > 0:
+        if not invEvidRptFile in fatalReportNames:
+            fatalReportNames.append(invEvidRptFile + NL)
 
     return
 #
@@ -868,7 +885,7 @@ def createInvEvidReport ():
 # Throws: Nothing
 #
 def createInvEditorReport ():
-    global errorCount
+    global errorCount, fatalReportNames
 
     print 'Create the invalid editor login report'
     sys.stdout.flush()
@@ -896,9 +913,12 @@ def createInvEditorReport ():
         editor = r['editor']
         fpInvEditorRpt.write('%-20s%s' % (editor, NL))
 
-    fpInvEditorRpt.write(NL + 'Number of Rows: ' + str(len(results[0])) + NL)
-
-    errorCount += len(results[0])
+    numErrors = len(results[0])
+    fpInvEditorRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
+    errorCount += numErrors
+    if numErrors > 0:
+        if not invEditorRptFile in fatalReportNames:
+            fatalReportNames.append(invEditorRptFile + NL)
 
     return
 
@@ -912,7 +932,7 @@ def createInvEditorReport ():
 #
 
 def createMultipleMCVReport():
-    global errorCount, annot
+    global multiCt, annot, nonfatalReportNames
 
     print 'Create the multiple MCV annotation report'
     sys.stdout.flush()
@@ -945,7 +965,11 @@ def createMultipleMCVReport():
 		term = termIDToTermDict[termID]
 		fpMultiMCVRpt.write('%-20s  %-16s  %-20s  %-30s%s' %
 		(mgiID, symbol, termID, term, NL))    
-    fpMultiMCVRpt.write(NL + 'Number of Rows: ' + str(multiCt) + NL)
+    fpMultiMCVRpt.write(NL + 'Number of Markers with Multiple MCV Annotations: ' + str(multiCt) + NL)
+    if multiCt > 0:
+	if not multiMcvRptFile in nonfatalReportNames:
+	    print 'writing multiMcvRptFile to nonfatalReportNames'
+	    nonfatalReportNames.append(multiMcvRptFile + NL)
 
     #
     # report markers in input annotated to different terms in the database
@@ -996,7 +1020,8 @@ def createMultipleMCVReport():
 #		    (mgiID, symbol, termID, term, ','.join(mgdTermList), NL))
 #    fpMultiMCVRpt.write(NL + 'Number of Rows: ' + str(multiCt) + NL)
 #
-    errorCount += multiCt
+    # This is not an error
+    #errorCount += multiCt
 
     return
 
@@ -1082,8 +1107,6 @@ def createAnnotFile ():
 #
 checkArgs()
 init()
-#openFiles() doing this in init
-#loadTempTable() doing this in int
 
 createInvMarkerReport()
 createSecMarkerReport()
@@ -1092,13 +1115,34 @@ createInvJNumReport()
 createInvEvidReport()
 createInvEditorReport()
 createMultipleMCVReport()
-createBeforeAfterReport()
+if errorCount == 0:
+    createBeforeAfterReport()
+    nonfatalReportNames.append('\nBefore/After file generated. See: %s\n' % beforeAfterRptFile)
+else:
+    fatalReportNames.append('\nDid not generate before/after file because of errors\n')
 closeFiles()
 
 if liveRun == "1":
     createAnnotFile()
 
-if errorCount > 0:
+# write  non fatal report names to stdout
+names = string.join(nonfatalReportNames,'' )
+fpRptNamesRpt.write('\nNon-Fatal QC errors detected in the following files:\n')
+fpRptNamesRpt.write(names)
+
+# write fatal report names to stdout
+fpRptNamesRpt.write('\nFatalQC errors detected in the following files:\n')
+names = string.join(fatalReportNames,'' )
+fpRptNamesRpt.write(names)
+
+fpRptNamesRpt.close()
+
+# multiple annotations in the input are Ok
+# will not prevent loading
+if multiCt > 0:
     sys.exit(2)
+# any report errors and load shouldn't run
+elif errorCount > 0:
+    sys.exit(3)
 else:
     sys.exit(0)

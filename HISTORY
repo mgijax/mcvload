@@ -1,3 +1,16 @@
+TAG: mcvload-4-3-4-4
+DATE: 06/24/2010
+STAFF: sc
+CHANGES: TR6839 Marker Types
+1) mcvload.config - Added RPT_NAMES_RPT
+  this is how we report the set of reports that
+  actually have errors
+2) mcvQC.sh - removed echo of all the QC and bcp files
+  Added cat'ing of RPT_NAMES_RPT and 
+3) mcvQC.py - Added support for reporting the fatal vs
+   non-fatal qc reports to stdout for the curators
+4) run_mcv_vocload.sh - removed the -x at top
+
 TAG: mcvload-4-3-4-3
 DATE: 06/22/2010
 STAFF: sc
