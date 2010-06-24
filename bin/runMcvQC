@@ -19,8 +19,7 @@ usage ()
     exit 1
 }
 
-#MCVLOADDIR=/usr/local/mgi/live/dataload/mcvload
-MCVLOADDIR=/home/sc/work/dataload/mcvload
+MCVLOADDIR=/usr/local/mgi/live/dataload/mcvload
 WRAPPER=${MCVLOADDIR}/bin/mcvQC.sh
 
 #

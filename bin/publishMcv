@@ -21,8 +21,7 @@ usage ()
 
 CURRENT_DIR=`pwd`
 
-#MCVLOADDIR=/usr/local/mgi/live/dataload/mcvload
-MCVLOADDIR=/home/sc/work/dataload/mcvload
+MCVLOADDIR=/usr/local/mgi/live/dataload/mcvload
 CONFIG=${MCVLOADDIR}/mcvload.config
 
 #
