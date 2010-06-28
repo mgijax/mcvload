@@ -3,7 +3,7 @@
 #  mcvload.config.default
 #
 #  This file sets up environment variables that are needed for 
-#  the Marker Type Ontology annotation load
+#  the Marker Category annotation load
 #
 ###########################################################################
 
@@ -39,7 +39,7 @@ export VOCLOAD_SH CONFIG_VOCLOAD ANNOTLOAD_CSH CONFIG_ANNOTLOAD
 ###########################################################################
 
 #  Path name of the archive, logs, reports and output directories
-FILEDIR=${DATALOADSOUTPUT}/mcv/mcvload
+FILEDIR=${DATALOADSOUTPUT}/mgi/mcvload
 ARCHIVEDIR=${FILEDIR}/archive
 LOGDIR=${FILEDIR}/logs
 RPTDIR=${FILEDIR}/reports
@@ -47,6 +47,14 @@ OUTPUTDIR=${FILEDIR}/output
 INPUTDIR=${FILEDIR}/input
 
 export FILEDIR ARCHIVEDIR LOGDIR RPTDIR OUTPUTDIR INPUTDIR
+
+
+# supports the script which adds a 9th and or 10th column 
+# if there isn't one
+ADD_COLUMNS_EXT='added.columns'
+ADD_COLUMNS_LOGFILE=${LOGDIR}/addColumns.log
+
+export ADD_COLUMNS_EXT ADD_COLUMNS_LOGFILE
 
 # Full path to the default input file.
 #
@@ -142,7 +150,7 @@ export JOBSTREAM
 ###########################################################################
 
 #  The name of the load for the subject of an email notification
-MAIL_LOADNAME="Marker Type Ontology Annotation Load"
+MAIL_LOADNAME="Marker Category Annotation Load"
 
 #  Recipient list for mailing the log files (comma-separated)
 #MAIL_LOG_PROC="mgiadmin"
