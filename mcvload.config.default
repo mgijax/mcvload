@@ -122,7 +122,7 @@ export MCVLOAD_TEMP_TABLE
 # Full path to scripts.
 #
 MCVLOAD_QC=${MCVLOAD}/bin/mcvQC.py
-MCVLOAD_QC_SH=${MCVLOAD}/bin/mcvload.sh
+MCVLOAD_QC_SH=${MCVLOAD}/bin/mcvQC.sh
 ADD_COLUMNS_SH=${MCVLOAD}/bin/addColumns.sh
 
 export MCVLOAD_QC MCVLOAD_QC_SC ADD_COLUMNS_SH 
