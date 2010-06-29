@@ -91,17 +91,13 @@ def addColumns ():
     for line in fpInput.readlines():
         tokens = string.split(line[:-1], '\t')
         numCols = len(tokens)
-        print 'numCols: %s' % numCols
-	print 'tokens: %s' %  tokens
         # if < 8 curator will have to fix, if > 10 ok
 	# if missing 9 or 10 just add it
         if numCols == 9:
             line  = '%s%s%s' % (line[:-1], TAB, CRT)
-	    print 'new line: %s' % line
 	    hasMissingColumns = 1
         elif numCols == 8:
             line = '%s%s%s%s' % (line[:-1], TAB, TAB, CRT)
-	    print 'new line: %s' % line
 	    hasMissingColumns = 1
 	lineList.append(line)
 
@@ -122,7 +118,7 @@ addColumns()
 if hasMissingColumns == 1:
     writeFile()
     fpOutput.close()
-    print '\nInput file has missing 9th and/or 10th column. New file: %s' % outputFile
+    print '\nInput file has missing 9th and/or 10th columns. New file: %s' % outputFile
 else:
-    print '\nInput file does not have missing 9th or 10th column'
+    print '\nInput file does not have missing 9th or 10th columns'
 fpInput.close()

@@ -110,6 +110,7 @@ fi
 if [ ${SERVER_NAME} = "hobbiton" ]
 then
     chmod -f 755 ${MCVLOAD_QC_SH}
+    chmod -f 755 ${ADD_COLUMNS_SH}
 fi
 
 exit 0

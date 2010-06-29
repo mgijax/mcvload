@@ -122,9 +122,10 @@ export MCVLOAD_TEMP_TABLE
 # Full path to scripts.
 #
 MCVLOAD_QC=${MCVLOAD}/bin/mcvQC.py
-MCVLOAD_LOADER_SH=${MCVLOAD}/bin/mcvload.sh
+MCVLOAD_QC_SH=${MCVLOAD}/bin/mcvload.sh
+ADD_COLUMNS_SH=${MCVLOAD}/bin/addColumns.sh
 
-export MCVLOAD_QC_SH MCVLOAD_QC 
+export MCVLOAD_QC MCVLOAD_QC_SC ADD_COLUMNS_SH 
 
 # Complete path name of the log files
 LOG_FILE=${LOGDIR}/mcvload.log
