@@ -968,7 +968,7 @@ def createMultipleMCVReport():
     fpMultiMCVRpt.write(NL + 'Number of Markers with Multiple MCV Annotations: ' + str(multiCt) + NL)
     if multiCt > 0:
 	if not multiMcvRptFile in nonfatalReportNames:
-	    print 'writing multiMcvRptFile to nonfatalReportNames'
+	    #print 'writing multiMcvRptFile to nonfatalReportNames'
 	    nonfatalReportNames.append(multiMcvRptFile + NL)
 
     #
@@ -1044,12 +1044,12 @@ def createBeforeAfterReport():
 	30*'-' +  ' ' + 30*'-' +  ' ' + 30*'-' +  ' ' + NL)
 
     for mgiID in inputTermIdLookupByMgiId.keys():
-	print 'beforeAfter input mgiID: %s' % mgiID
+	#print 'beforeAfter input mgiID: %s' % mgiID
 	symbol = mgiIDToSymbolDict[mgiID]
 	inputTermIDList = []
 	if inputTermIdLookupByMgiId.has_key(mgiID):
 	    inputTermIDList = inputTermIdLookupByMgiId[mgiID]
-	    print 'inputTermIDList: %s' % inputTermIDList
+	    #print 'inputTermIDList: %s' % inputTermIDList
 	inputTermList = []
 	for id in inputTermIDList:
 	    if id != None:
@@ -1058,12 +1058,12 @@ def createBeforeAfterReport():
 	mgdTermIDList = []
 	if mgdMgiIdToTermIdDict.has_key(mgiID):
 	    mgdTermIDList = mgdMgiIdToTermIdDict[mgiID]
-	    print 'mgdTermIDList: %s' % mgdTermIDList
+	    #print 'mgdTermIDList: %s' % mgdTermIDList
 	mgdTermList = []
 	for id in mgdTermIDList:
 	    term = termIDToTermDict[id]
 	    mgdTermList.append(term)
-	print  '%s %s %s %s %s %s' % (mgiID, symbol, mgdTermIDList, mgdTermList, inputTermIDList, inputTermList)
+	#print  '%s %s %s %s %s %s' % (mgiID, symbol, mgdTermIDList, mgdTermList, inputTermIDList, inputTermList)
 	fpBeforeAfterRpt.write('%-20s  %-20s  %-30s  %-30s  %-30s  %-30s%s' %
 	    (mgiID, symbol, ','.join(mgdTermIDList), ','.join(mgdTermList), \
 	    ','.join(inputTermIDList), ','.join(inputTermList), NL))
@@ -1139,10 +1139,14 @@ fpRptNamesRpt.close()
 
 # multiple annotations in the input are Ok
 # will not prevent loading
-if multiCt > 0:
-    sys.exit(2)
+#if multiCt > 0:
+#    sys.exit(2)
 # any report errors and load shouldn't run
-elif errorCount > 0:
+#elif errorCount > 0:
+#    sys.exit(3)
+if errorCount > 0:
     sys.exit(3)
+elif multiCt > 0:
+    sys.exit(2)
 else:
     sys.exit(0)

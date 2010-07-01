@@ -45,6 +45,7 @@ TAB = '\t'
 inputFile = None
 fpInput = None
 numColumns = None
+errors = 0
 
 #
 # Purpose: Validate the arguments to the script.
@@ -90,6 +91,7 @@ def openFile ():
 # Throws: Nothing
 #
 def checkColumns ():
+    global errors
     lineNum = 0
     print "\n\nLines With Missing Columns"
     print "--------------------------"
@@ -104,6 +106,7 @@ def checkColumns ():
 	#print 'nc  %s < numColumns %s = %s ' % (nc, numColumns, nc < numColumns)
 	if nc < numColumns:
 	    print 'lineNum: %s, columns: %s numColumns: %s' % (lineNum, columns, nc)
+	    errors = errors + 1
     return
 
 #
@@ -123,4 +126,5 @@ checkArgs()
 openFile()
 checkColumns()
 closeFile()
-
+if errors > 0:
+    sys.exit(1)
