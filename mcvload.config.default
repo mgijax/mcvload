@@ -57,8 +57,9 @@ ADD_COLUMNS_LOGFILE=${LOGDIR}/addColumns.log
 export ADD_COLUMNS_EXT ADD_COLUMNS_LOGFILE
 
 # Full path to the default input file.
-#
-INPUT_FILE_DEFAULT=${INPUTDIR}/mcvload.txt
+# If you change the name of this file, you must change it
+# in the annotload.csh.config as well
+INPUT_FILE_DEFAULT=${INPUTDIR}/mcvload_annot.txt
 
 export INPUT_FILE_DEFAULT
 

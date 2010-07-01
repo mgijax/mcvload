@@ -1,3 +1,13 @@
+TAG: mcvload-4-3-4-13
+TAG: mcvload-4-3-4-12 - bad tag, bin dir only
+DATE: 06/28/2010
+STAFF: sc
+CHANGES:
+1) mcvload.config.default - INPUT_FILE_DEFAULT changed value
+2) checkColumns.py - added sys.exit(1) if reporting missing columns
+3) mcvload.sh - added running sanity and QC checks to this script
+4) publishMcv - remove header line when copying to load input dir
+
 TAG: mcvload-4-3-4-11
 TAG: mcvload-4-3-4-10
 DATE: 06/28/2010
