@@ -9,7 +9,7 @@
 #
 #  Usage:
 #
-#      checkColumns.py  filename
+#      addColumns.py  filename
 #
 #      where:
 #          filename = path to the input file
@@ -18,7 +18,7 @@
 #
 #      0:  Successful completion
 #      1:  An exception occurred
-#      2:  Discrepancy errors detected in the input files
+#
 #  Implementation:
 #
 #  Notes:  None
@@ -37,7 +37,6 @@ inputFile = None
 fpInput = None
 fpOutput = None
 outputFile = None
-numColumns = os.environ['MCVLOAD_FILE_COLUMNS']
 header = None
 lineList = []
 hasMissingColumns = 0
@@ -58,7 +57,6 @@ def checkArgs ():
     inputFile = sys.argv[1]
     return
 
-
 #
 # Purpose: Open the file for reading
 # Returns: Nothing
@@ -74,7 +72,6 @@ def openFile ():
         print 'Cannot open input file: ' + inputFile
         sys.exit(1)
     return
-
 
 #
 # Purpose: Add columns 9 and/or 10 when missing
@@ -101,13 +98,19 @@ def addColumns ():
 	    hasMissingColumns = 1
 	lineList.append(line)
 
+#
+# Purpose: write new file with added columns
+# Returns: Nothing
+# Assumes: Nothing
+# Effects: creates file in the filesystem
+# Throws: Nothing
+#
 def writeFile():
     global fpOutput, outputFile
     outputFile = '%s.%s' % (inputFile, os.environ['ADD_COLUMNS_EXT'])
     fpOutput = open(outputFile, 'w')
     for line in lineList:
 	fpOutput.write(line)
-
 
 #
 # Main

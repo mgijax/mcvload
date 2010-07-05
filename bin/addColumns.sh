@@ -19,7 +19,7 @@
 #
 #  Inputs:
 #
-#      - tab delimitted file
+#      - tab delimited file
 #
 #  Outputs:
 #

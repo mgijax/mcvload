@@ -67,12 +67,7 @@ cmds.append('''select feature, count(feature) as featureCount
 
 results = db.sql(cmds, 'auto')
 
-#print results[2]
 fp.write('MCV Annotations by Feature%s%s' %(CRT, CRT))
 for r in results[2]:
     fp.write('%s%s%s%s' % (r['feature'], TAB, r['featureCount'], CRT))
-
-#reportlib.trailer(fp)
-#reportlib.finish_nonps(fp)	# non-postscript file
-#reportlib.finish_ps(fp)	# convert to postscript file
 

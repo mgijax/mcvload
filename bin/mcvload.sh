@@ -165,15 +165,6 @@ then
     exit 1
 fi
 
-#echo "{ ${MCVLOAD_QC_SH} ${INPUT_FILE_DEFAULT} ${RUNTYPE} 2>&1; echo $? > ${TMP_FILE}; } >> ${LOG_DIAG}"
-#{ ${MCV_QC_SH} ${INPUT_FILE_DEFAULT} ${RUNTYPE} 2>&1; echo $? > ${TMP_FILE}; } >> ${LOG_DIAG}
-#echo `cat ${TMP_FILE}`
-#if [ `cat ${TMP_FILE}` -eq 1 ]
-#then
-#    STAT=1
-#    checkStatus ${STAT} "QC reports"
-#fi
-
 #
 # run annotation load
 #

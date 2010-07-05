@@ -2,7 +2,6 @@
 
 '''
 #
-# template.py 06/09/00
 #
 # Report:
 #       Markers of type gene with no MCV annotations
@@ -12,7 +11,7 @@
 #
 # History:
 #
-# lec	06/07/10
+# sc	06/07/10
 #	- created
 #
 '''
@@ -66,8 +65,3 @@ results = db.sql(cmds, 'auto')
 fp.write('%s Genes with no MCV Annotation%s%s' %(len(results[1]),CRT, CRT))
 for r in results[1]:
     fp.write(r['accid'] + TAB + r['symbol'] + CRT)
-
-#reportlib.trailer(fp)
-#reportlib.finish_nonps(fp)	# non-postscript file
-#reportlib.finish_ps(fp)	# convert to postscript file
-

@@ -30,7 +30,7 @@ ANNOTLOAD_CSH=${ANNOTLOAD}/annotload.csh
 
 CONFIG_ANNOTLOAD=${MCVLOAD}/annotload.csh.config
 
-export VOCLOAD_SH CONFIG_VOCLOAD ANNOTLOAD_CSH CONFIG_ANNOTLOAD
+export ANNOTLOAD_CSH CONFIG_ANNOTLOAD
 
 ###########################################################################
 #
@@ -48,7 +48,6 @@ INPUTDIR=${FILEDIR}/input
 
 export FILEDIR ARCHIVEDIR LOGDIR RPTDIR OUTPUTDIR INPUTDIR
 
-
 # supports the script which adds a 9th and or 10th column 
 # if there isn't one
 ADD_COLUMNS_EXT='added.columns'
@@ -57,9 +56,8 @@ ADD_COLUMNS_LOGFILE=${LOGDIR}/addColumns.log
 export ADD_COLUMNS_EXT ADD_COLUMNS_LOGFILE
 
 # Full path to the default input file.
-# If you change the name of this file, you must change it
-# in the annotload.csh.config as well
-INPUT_FILE_DEFAULT=${INPUTDIR}/mcvload_annot.txt
+# This is where the publish script places the file
+INPUT_FILE_DEFAULT=${INPUTDIR}/mcvload.txt
 
 export INPUT_FILE_DEFAULT
 
@@ -77,18 +75,18 @@ INPUT_FILE_BCP=${OUTPUTDIR}/mcvload_temp.bcp
 export INPUT_FILE_BCP
 
 # Full path to the load-ready annotation file that is created by the
-# sanity/QC report script and used as input by the annotation loader.
-#
+# sanity/QC report script when run in 'live' mode. This file is used 
+# by the annotation loader, so if you change its name, you must change it
+# in the annotload.csh.config as well
 ANNOT_FILE=${OUTPUTDIR}/mcvload_annot.txt
 
 export ANNOT_FILE
 
-# Full path to the log files.
+# Full path to the  sanity/QC log.
 #
 MCVLOADQC_LOGFILE=${LOGDIR}/mcvQC.log
-MCVLOAD_LOGFILE=${LOGDIR}/mcv.log
 
-export MCVLOADQC_LOGFILE MCVLOAD_LOGFILE
+export MCVLOADQC_LOGFILE 
 
 # Full path to the sanity/QC reports.
 #
@@ -120,25 +118,21 @@ MCVLOAD_TEMP_TABLE=MCVLoad
 
 export MCVLOAD_TEMP_TABLE
 
-# Full path to scripts.
+# Full path to QC/sanity scripts.
 #
 MCVLOAD_QC=${MCVLOAD}/bin/mcvQC.py
 MCVLOAD_QC_SH=${MCVLOAD}/bin/mcvQC.sh
-ADD_COLUMNS_SH=${MCVLOAD}/bin/addColumns.sh
 
-export MCVLOAD_QC MCVLOAD_QC_SC ADD_COLUMNS_SH 
+export MCVLOAD_QC MCVLOAD_QC_SC
 
-# Complete path name of the log files
+# Complete path name of the mcvload log files
 LOG_FILE=${LOGDIR}/mcvload.log
 LOG_PROC=${LOGDIR}/mcvload.proc.log
 LOG_DIAG=${LOGDIR}/mcvload.diag.log
 LOG_CUR=${LOGDIR}/mcvload.cur.log
 LOG_VAL=${LOGDIR}/mcvload.val.log
 
-#  Send debug messages to the diagnostic log (true or false)
-LOG_DEBUG=false
-
-export LOG_FILE LOG_PROC LOG_DIAG LOG_CUR LOG_VAL LOG_DEBUG
+export LOG_FILE LOG_PROC LOG_DIAG LOG_CUR LOG_VAL
 
 #  The name of the job stream for the load
 JOBSTREAM=mcvload
@@ -155,8 +149,7 @@ export JOBSTREAM
 MAIL_LOADNAME="Marker Category Annotation Load"
 
 #  Recipient list for mailing the log files (comma-separated)
-#MAIL_LOG_PROC="mgiadmin"
-MAIL_LOG_PROC="sc"
+MAIL_LOG_PROC="mgiadmin"
 
 export MAIL_LOADNAME MAIL_LOG_PROC
 

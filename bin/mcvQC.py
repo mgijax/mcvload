@@ -69,7 +69,8 @@
 #
 #      0:  Successful completion
 #      1:  An exception occurred
-#      2:  Discrepancy errors detected in the input files
+#      2:  Non-fatal discrepancy errors detected in the input files
+#      3:  Fatal discrepancy errors detected in the input files
 #
 #  Assumes:
 #
@@ -120,9 +121,13 @@ liveRun = os.environ['LIVE_RUN']
 
 tempTable = os.environ['MCVLOAD_TEMP_TABLE']
 
+# temp table bcp file name
 bcpFile = os.environ['INPUT_FILE_BCP']
+
+# annotation file name used in 'live' mode only
 annotFile = os.environ['ANNOT_FILE']
 
+# Report file names
 invMrkRptFile = os.environ['INVALID_MARKER_RPT']
 secMrkRptFile = os.environ['SEC_MARKER_RPT']
 invTermIdRptFile = os.environ['INVALID_TERMID_RPT']
@@ -135,9 +140,14 @@ rptNamesFile = os.environ['RPT_NAMES_RPT']
 
 timestamp = mgi_utils.date()
 
+# current number of fatal errors
 errorCount = 0
-multiCt = 0
+# list of reports which contain fatal errors
 fatalReportNames = []
+
+# current number of non fatal multiple MCV/gene errors
+multiCt = 0
+# list of reports which contain non-fatal errors
 nonfatalReportNames = []
 
 # Looks like {mgiID:[ [annotAttributes1], ...], ...}
@@ -150,7 +160,7 @@ annot = {}
 mgiIDToSymbolDict = {}
 
 # Looks like {mcvOrSoID:term, ...}
-# All mcv or so ids mapped to their terms
+# All mcv and so ids mapped to their terms
 termIDToTermDict = {}
 
 # Looks like {mgiID:[termID1, ...], ...}
@@ -161,7 +171,7 @@ mgdMgiIdToTermIdDict = {}
 # Purpose: Validate the arguments to the script.
 # Returns: Nothing
 # Assumes: Nothing
-# Effects: Sets global variables.
+# Effects: sets global variable
 # Throws: Nothing
 #
 def checkArgs ():
@@ -197,7 +207,12 @@ def init ():
     openFiles()
     loadTempTable()
 
+    #
     # Load global lookup dictionaries
+    #
+
+    # create lookup of all official markers in the database 
+    # mapped to their symbols
     results = db.sql('''select a.accid, m.symbol
 	from ACC_Accession a, MRK_Marker m
 	where a._MGIType_key = 2
@@ -208,7 +223,7 @@ def init ():
     for r in results:
 	mgiIDToSymbolDict[r['accid']] = r['symbol']
 
-    # select both SO and MCV IDs
+    # create lookup of all mcv and so ids mapped to their terms
     results = db.sql('''select a.accID, t.term
 	from ACC_Accession a, VOC_Term t
 	where a._LogicalDB_key in (145,146)
@@ -218,6 +233,7 @@ def init ():
     for r in results:
 	termIDToTermDict[r['accID']] = r['term']
 
+    # create lookup of markers mapped to their SO/MCV IDs
     results = db.sql('''select a1.accID as termID, a2.accID as mgiID
             from  VOC_Annot v, ACC_Accession a1, ACC_Accession a2
             where v._AnnotType_key =  1011
@@ -238,12 +254,14 @@ def init ():
         mgdMgiIdToTermIdDict[mgiID].append(termID)
 
     #
-    # get all SO/MCV annotations to markers from Input
+    # get all SO/MCV annotations to markers from temp table
+    # loaded from the input file
     #
     results = db.sql('select tmp.termID, tmp.mgiID ' + \
                 'from tempdb..' + tempTable + ' tmp ', 'auto')
                 #'where tmp.mgiID is not null ' + \
                 #'and tmp.termID is not null', 'auto')
+
     # load lookup
     inputTermIdLookupByMgiId = {}
     for r in results:
@@ -409,12 +427,13 @@ def loadTempTable ():
 	
 	#
 	# Special Case
-	# If there is only an mgiID this is ok, it means curator intends to delete all 
-        # annotations
+	# If there is only an mgiID this is ok, it means 
+        # curator intends to delete all annotations
 	#
-	if termIDExists == 0 and jNumExists == 0 and evidCodeExists == 0 and inferFromExists == 0 \
-	    and editorExists == 0 and mgiIDExists > 0:
-	    # check the MGI ID for format and continue
+	if termIDExists == 0 and jNumExists == 0 and \
+		evidCodeExists == 0 and inferFromExists == 0 \
+		and editorExists == 0 and mgiIDExists > 0:
+	    # check the MGI ID for format 
 	    if re.match('MGI:[0-9]+',mgiID) == None:
                 print 'Invalid MGI ID (line ' + str(count) + ')'
                 fpBCP.close()
@@ -424,8 +443,10 @@ def loadTempTable ():
 	    fpBCP.write(termID + TAB + mgiID + TAB + jNum +  TAB + evidCode + \
             TAB + editor + NL)
 
-	    # add to the annotation dictionary so it gets written to the annotation file
-	    annotList = [termID, mgiID, jNum, evidCode, inferFrom, qual, editor, date, notes, ldb]
+	    # add to the annotation dictionary so it gets written to the 
+	    # annotation file
+	    annotList = [termID, mgiID, jNum, evidCode, inferFrom, qual, \
+		editor, date, notes, ldb]
             if not annot.has_key(mgiID):
                 annot[mgiID] = []
             annot[mgiID].append(annotList)
@@ -444,7 +465,8 @@ def loadTempTable ():
 	else:
 	    if re.match('MCV:[0-9]+',termID) == None and \
 		re.match('SO:[0-9]+',termID) == None:
-		print 'Invalid Term ID (line ' + str(count) + ')' + ' ' + termID
+		print 'Invalid Term ID (line ' + str(count) + ')' + ' ' + \
+		    termID
 		fpBCP.close()
 		closeFiles()
 		sys.exit(1)
@@ -506,7 +528,8 @@ def loadTempTable ():
         # the annotation attributes for that the MGI ID.
         #
         if mgiID != '':
-	    annotList = [termID, mgiID, jNum, evidCode,	inferFrom, qual, editor, date, notes, ldb]
+	    annotList = [termID, mgiID, jNum, evidCode,	inferFrom, \
+		qual, editor, date, notes, ldb]
             if not annot.has_key(mgiID):
 		annot[mgiID] = []
 	    annot[mgiID].append(annotList)
@@ -525,7 +548,9 @@ def loadTempTable ():
     print 'Load the input data into the temp table: ' + tempTable
     sys.stdout.flush()
 
-    bcpCmd = 'cat %s | bcp tempdb..%s in %s -c -t"%s" -S%s -U%s' % (passwordFile, tempTable, bcpFile, TAB, db.get_sqlServer(), db.get_sqlUser())
+    bcpCmd = 'cat %s | bcp tempdb..%s in %s -c -t"%s" -S%s -U%s' % \
+	(passwordFile, tempTable, bcpFile, TAB, db.get_sqlServer(), \
+	    db.get_sqlUser())
     rc = os.system(bcpCmd)
     if rc <> 0:
         closeFiles()
@@ -635,17 +660,6 @@ def createInvMarkerReport ():
         fpInvMrkRpt.write('%-20s  %-16s  %-20s  %-20s  %-30s%s' %
             (termID, mgiID, objectType, markerStatus, reason, NL))
 
-        #
-        # If the MGI ID and term ID are found in the annotation
-        # dictionary, remove the term ID from the list so the
-        # annotation doesn't get written to the annotation file.
-        #
-        #if liveRun == "1":
-        #    if annot.has_key(mgiID):
-        #        list = annot[mgiID]
-        #        if list.count(termID) > 0:
-        #            list.remove(termID)
-        #        annot[mgiID] = list
     numErrors = len(results[0])
     fpInvMrkRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
     errorCount += numErrors
@@ -751,7 +765,7 @@ def createInvTermIdReport ():
     cmds = []
 
     #
-    # Find any sequence IDs from the input data that are not in the database.
+    # Find any term IDs from the input data that are not in the database.
     #
     cmds.append('select tmp.termID ' + \
                 'from tempdb..' + tempTable + ' tmp ' + \
@@ -971,58 +985,6 @@ def createMultipleMCVReport():
 	    #print 'writing multiMcvRptFile to nonfatalReportNames'
 	    nonfatalReportNames.append(multiMcvRptFile + NL)
 
-    #
-    # report markers in input annotated to different terms in the database
-    #
-    #fpMultiMCVRpt.write(string.center(NL + \
-    #    'Multiple MCV Annotation Btwn Input File and Database Report',80) + \
-#	    2*NL)
-#    fpMultiMCVRpt.write('%-20s  %-16s  %-20s  %-30s  %-30s%s' %
-#                     ('MGI ID','Symbol',
-#                      'Input Term ID','Input Term','Database Term(s)', NL))
-#    fpMultiMCVRpt.write(20*'-' + ' ' + 16*'-' + ' ' + 20*'-' + ' ' + 30*'-' + \
-#	' ' + NL)
-#
-    #
-    # Write the records to the report.
-    #
-#    multiCt = 0
-#    for mgiID in inputTermIdLookupByMgiId.keys():
-#	inputTermIDList = inputTermIdLookupByMgiId[mgiID]
-#	print 'inputTermIDList: %s' % inputTermIDList
-#	mgdTermIdList = []
-#	if mgdMgiIdToTermIdDict.has_key(mgiID):
-#	    mgdTermIdList = mgdMgiIdToTermIdDict[mgiID]
-#	    print 'found input mgiID: %s in db termList: %s' % (mgiID, mgdTermIdList)
-#	else:
-#	    print 'did not find mgiID in db %s' % (mgiID)
-#	    continue
-#        for termID in inputTermIDList:
-#	    if termID not in mgdTermIdList:
-#		multiCt += 1
-#	 	if termIDToTermDict.has_key(termID):
-#		    term = termIDToTermDict[termID]
-#		else: 
-#		    print 'termID %s not in db' % termID
-#		    continue
-#		if mgiIDToSymbolDict.has_key(mgiID):
-#		    symbol = mgiIDToSymbolDict[mgiID]
-#		else: 
-#		    print 'mgiID %s not in db' % mgiID
-#		    continue
-#
-#		mgdTermList = []
-#	        for mgdTermId in mgdTermIdList:
-#		    mgdTerm = termIDToTermDict[mgdTermId]
-#		    if mgdTerm not in mgdTermList:
-#			mgdTermList.append(mgdTerm)
-#		fpMultiMCVRpt.write('%-20s  %-16s  %-20s  %-30s  %-30s%s' %
-#		    (mgiID, symbol, termID, term, ','.join(mgdTermList), NL))
-#    fpMultiMCVRpt.write(NL + 'Number of Rows: ' + str(multiCt) + NL)
-#
-    # This is not an error
-    #errorCount += multiCt
-
     return
 
 #
@@ -1044,12 +1006,10 @@ def createBeforeAfterReport():
 	30*'-' +  ' ' + 30*'-' +  ' ' + 30*'-' +  ' ' + NL)
 
     for mgiID in inputTermIdLookupByMgiId.keys():
-	#print 'beforeAfter input mgiID: %s' % mgiID
 	symbol = mgiIDToSymbolDict[mgiID]
 	inputTermIDList = []
 	if inputTermIdLookupByMgiId.has_key(mgiID):
 	    inputTermIDList = inputTermIdLookupByMgiId[mgiID]
-	    #print 'inputTermIDList: %s' % inputTermIDList
 	inputTermList = []
 	for id in inputTermIDList:
 	    if id != None:
@@ -1058,15 +1018,13 @@ def createBeforeAfterReport():
 	mgdTermIDList = []
 	if mgdMgiIdToTermIdDict.has_key(mgiID):
 	    mgdTermIDList = mgdMgiIdToTermIdDict[mgiID]
-	    #print 'mgdTermIDList: %s' % mgdTermIDList
 	mgdTermList = []
 	for id in mgdTermIDList:
 	    term = termIDToTermDict[id]
 	    mgdTermList.append(term)
-	#print  '%s %s %s %s %s %s' % (mgiID, symbol, mgdTermIDList, mgdTermList, inputTermIDList, inputTermList)
 	fpBeforeAfterRpt.write('%-20s  %-20s  %-30s  %-30s  %-30s  %-30s%s' %
 	    (mgiID, symbol, ','.join(mgdTermIDList), ','.join(mgdTermList), \
-	    ','.join(inputTermIDList), ','.join(inputTermList), NL))
+		','.join(inputTermIDList), ','.join(inputTermList), NL))
 
     return
 #
@@ -1139,14 +1097,9 @@ fpRptNamesRpt.close()
 
 # multiple annotations in the input are Ok
 # will not prevent loading
-#if multiCt > 0:
-#    sys.exit(2)
-# any report errors and load shouldn't run
-#elif errorCount > 0:
-#    sys.exit(3)
-if errorCount > 0:
+if errorCount > 0: # fatal errors
     sys.exit(3)
-elif multiCt > 0:
+elif multiCt > 0:   # multiple annotations in the input are Ok
     sys.exit(2)
 else:
     sys.exit(0)
