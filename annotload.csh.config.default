@@ -4,7 +4,7 @@
 # defaults for MCV annotation load
 #
 
-setenv ANNOTDATADIR	/data/loads/mgi/mcvload/input
+setenv ANNOTDATADIR	/data/loads/mgi/mcvload/output
 setenv ANNOTMODE	append
 setenv ANNOTTYPENAME	"MCV/Marker"
 setenv ANNOTINPUTFILE  ${ANNOTDATADIR}/mcvload_annot.txt

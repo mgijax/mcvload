@@ -3,7 +3,8 @@
 #  addColumns.sh
 ###########################################################################
 #
-#  Purpose:
+#  Purpose: Create a new file with null 9th and/or 10th columns when
+#	either are missing from the input file
 #
 #
 #  Usage:

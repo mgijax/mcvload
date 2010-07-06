@@ -4,7 +4,9 @@
 ###########################################################################
 #
 #  Purpose:
-# 	This script optionally runs the Marker Category Vocab (MCV) Load
+# 	This script runs the Marker Category Vocab (MCV) Load
+#	and moves secondary SO IDs to the SO Logical DB as preferred,
+#	private
 #
   Usage=run_mcv_vocload.sh
 #
