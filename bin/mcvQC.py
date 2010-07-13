@@ -32,6 +32,7 @@
 #	   INVALID_EVID_RPT
 #	   INVALID_EDITOR_RPT
 #	   MULTIPLE_MCV_RPT
+#	   MKR_TYPE_CONFLICT_RPT
 #	   BEFORE_AFTER_RPT
 #          ANNOT_FILE
 #
@@ -60,6 +61,8 @@
 #      - QC report (${INVALID_EDITOR_RPT})
 #
 #      - QC report (${MULTIPLE_MCV_RPT})
+#
+#      - QC report (${MKR_TYPE_CONFLICT_RPT})
 #
 #      - QC report (${BEFORE_AFTER_RPT})
 #
@@ -135,6 +138,7 @@ invJNumRptFile = os.environ['INVALID_JNUM_RPT']
 invEvidRptFile = os.environ['INVALID_EVID_RPT']
 invEditorRptFile = os.environ['INVALID_EDITOR_RPT']
 multiMcvRptFile = os.environ['MULTIPLE_MCV_RPT']
+conflictRptFile = os.environ['MKR_TYPE_CONFLICT_RPT']
 beforeAfterRptFile =  os.environ['BEFORE_AFTER_RPT']
 rptNamesFile = os.environ['RPT_NAMES_RPT']
 
@@ -147,6 +151,10 @@ fatalReportNames = []
 
 # current number of non fatal multiple MCV/gene errors
 multiCt = 0
+
+# current number on non fatal mkr type conflicts
+conflictCt = 0
+
 # list of reports which contain non-fatal errors
 nonfatalReportNames = []
 
@@ -166,6 +174,30 @@ termIDToTermDict = {}
 # Looks like {mgiID:[termID1, ...], ...}
 # markers mapped to their SO/MCV IDs
 mgdMgiIdToTermIdDict = {}
+
+# map marker type key to marker type
+mkrTypeKeyToMkrTypeDict = {}
+#
+# map marker type to the MCV Term associated with the marker type
+#  looks like {mType:mcvTerm, ...}
+mkrTypeToAssocMCVTermDict = {}
+
+# The inverse of above looks like {mcvTerm:mType}
+# marker type mcv term and actual marker type should always be the same
+# but just in case we create this lookup
+mcvTermToMkrTypeDict = {}
+
+# map MCV Term to its parent term representing a marker type (could be itself)
+# looks like {mcvTerm:mkrTypeTerm, ...}
+mcvTermToParentMkrTypeTermDict = {}
+
+inputTermIdLookupByMgiId = {}
+
+mkrKeyToMkrTypeKeyDict = {}
+#
+# map marker mgiID to its marker type
+#
+mgiIdToMkrTypeDict = {}
 
 #
 # Purpose: Validate the arguments to the script.
@@ -197,13 +229,18 @@ def init ():
     global mgiIDToSymbolDict, termIDToTermDict
     global mgdMgiIdToTermIdDict, inputTermIdLookupByMgiId
 
+    global mcvTermToParentMkrTypeTermDict
+    global mcvKeyToTermDict, mkrTypeToAssocMCVTermDict
+    global mcvTermToMkrTypeDict, mkrKeyToMkrTypeKeyDict
+
     print 'DB Server:' + db.get_sqlServer()
     print 'DB Name:  ' + db.get_sqlDatabase()
     sys.stdout.flush()
 
     db.set_sqlUser(user)
     db.set_sqlPasswordFromFile(passwordFile)
-
+    db.useOneConnection(1)
+    #db.set_sqlLogFunction(db.sqlLogAll)
     openFiles()
     loadTempTable()
 
@@ -263,7 +300,6 @@ def init ():
                 #'and tmp.termID is not null', 'auto')
 
     # load lookup
-    inputTermIdLookupByMgiId = {}
     for r in results:
         mgiID = r['mgiID']
         termID = r['termID']
@@ -271,7 +307,128 @@ def init ():
 	    inputTermIdLookupByMgiId[mgiID] = [] # default
 	if termID != None: # this case when only mgiID in file for delete
 	    inputTermIdLookupByMgiId[mgiID].append(termID)
-	
+    #
+    # get marker types from the database
+    #
+    results = db.sql(''' select a.accId as mgiID, t.name as mkrType
+                from MRK_Marker m, ACC_Accession a, MRK_Types t
+                where m._Marker_Status_key = 1
+                and m._Organism_key = 1
+		and m._Marker_key = a._Object_key
+		and a._MGIType_key = 2
+		and a._LogicalDB_key = 1
+		and a.preferred = 1
+		and a.prefixPart = "MGI:"
+		and m._Marker_Type_key = t._Marker_Type_key''', 'auto')
+    for r in results:
+	mgiIdToMkrTypeDict[r['mgiID']] = r['mkrType']
+
+    results = db.sql(''' select name, _Marker_Type_key
+		from MRK_Types''', 'auto')
+    for r in results:
+	mkrTypeKeyToMkrTypeDict[ r['_Marker_Type_key'] ] =  r['name']
+######
+    # parse the MCV Note and load lookups
+    # we store the association of a marker type to a MCV
+    # term in the term Note. Only MCV terms which correspond to
+    # marker types have these notes
+    # note looks like:
+    # Marker_Type=N
+    #
+    # _Vocab_key = 79 = Marker Category Vocab
+    # _NoteType_key = 1001 = Private Vocab Term Comment'
+
+    # Get the MCV vocab terms and their notes from the database
+    # Notes tell us the term's MGI marker type if term maps directly to a
+    # marker type
+    cmds = []
+    cmds.append('select n._Object_key, rtrim(nc.note) as chunk, ' + \
+	'nc.sequenceNum ' + \
+        'into #notes ' + \
+        'from MGI_Note n, MGI_NoteChunk nc ' + \
+        'where n._MGIType_key = 13 ' + \
+            'and n._NoteType_key = 1001 ' + \
+            'and n._Note_key = nc._Note_key')
+    cmds.append('create index idx1 on #notes(_Object_key)')
+    cmds.append('select t._Term_key, t.term, n.chunk ' + \
+            'from VOC_Term t, #notes n ' + \
+            'where t._Vocab_key = 79 ' + \
+            'and t._Term_key *= n._Object_key ' + \
+            'order by t._Term_key, n.sequenceNum')
+    results = db.sql(cmds, 'auto')
+    notes = {} # map the terms to their note chunks
+    for r in results[2]:
+        #mcvKey = r['_Term_key']
+        term = r['term']
+        chunk = r['chunk']
+        # if there is a note chunk add it to the notes dictionary
+        # we'll pull all the chunks together later
+        if chunk != None:
+            if not notes.has_key(term):
+                notes[term] = []
+            notes[term].append(chunk)
+        # add mapping of key to term
+        #mcvKeyToTermDict[mcvKey] = term
+    # parse the marker type from the note
+    for term in notes.keys():
+        note = string.join(notes[term], '')
+        # parse the note
+        tokens = string.split(note, '=')
+        # 2nd token is the marker type key
+        mkrTypeKey = int(string.strip(tokens[1]))
+	mkrType = mkrTypeKeyToMkrTypeDict[mkrTypeKey]
+        # There is only 1  MCV term per MGI Mkr type?
+        mkrTypeToAssocMCVTermDict[mkrType]= term
+        mcvTermToMkrTypeDict[term] = mkrType
+
+    #
+    # now map all mcv terms to their parent term representing a marker type
+    # for all children in the closure table - find the parent
+    # which is a marker type parent
+    #
+    cmds = []
+    cmds.append('select _AncestorObject_key, _DescendentObject_key ' + \
+	    'into #clos ' + \
+            'from DAG_Closure ' + \
+            'where _DAG_key = 9 ' + \
+            'and _MGIType_key = 13')
+    cmds.append('create index idx1 on #clos(_AncestorObject_key)')
+    cmds.append('create index idx2 on #clos(_DescendentObject_key)')
+    cmds.append('select t1.term as ancestorTerm, ' + \
+		't2.term as descendentTerm ' + \
+		'from #clos c, VOC_Term t1, VOC_Term t2 ' + \
+		'where c._AncestorObject_key = t1._Term_key ' + \
+		'and c._DescendentObject_key = t2._Term_key ' + \
+                'order by t2.term')
+    results = db.sql(cmds, 'auto')
+    # the mcv terms that represent marker types
+    mcvMarkerTypeValues  = mkrTypeToAssocMCVTermDict.values()
+    for r in results[3]:
+        aTerm = r['ancestorTerm']
+        dTerm = r['descendentTerm']
+        if mcvTermToParentMkrTypeTermDict.has_key(dTerm):
+            # we've already mapped this descendent to its marker type parent
+            continue
+        # dTerm may be a marker type term
+        elif dTerm in mcvMarkerTypeValues:
+            mcvTermToParentMkrTypeTermDict[dTerm] = dTerm
+        # if the ancestor of this descendent term is a
+        # marker type term load it into the dict
+        elif aTerm in mcvMarkerTypeValues:
+            mcvTermToParentMkrTypeTermDict[dTerm] = aTerm
+
+    # map marker keys to their marker type
+    cmd = ''' select _Marker_Type_key, _Marker_key
+                from MRK_Marker
+                where _Marker_Status_key = 1'''
+
+    results = db.sql(cmd, 'auto')
+    for r in results:
+        mkrTypeKey = r['_Marker_Type_key']
+        mkrKey = r['_Marker_key']
+        mkrKeyToMkrTypeKeyDict[mkrKey] = mkrTypeKey
+
+#########	
     return
 
 
@@ -286,7 +443,8 @@ def openFiles ():
     global fpInput, fpBCP
     global fpInvMrkRpt, fpSecMrkRpt, fpInvTermIdRpt
     global fpInvJNumRpt, fpInvEvidRpt, fpInvEditorRpt
-    global fpMultiMCVRpt, fpBeforeAfterRpt, fpRptNamesRpt
+    global fpMultiMCVRpt, fpConflictRpt, fpBeforeAfterRpt, fpRptNamesRpt
+
     #
     # Open the input file.
     #
@@ -344,6 +502,11 @@ def openFiles ():
         print 'Cannot open report file: ' + multiMcvRptFile
         sys.exit(1)
     try:
+        fpConflictRpt = open(conflictRptFile, 'a')
+    except:
+        print 'Cannot open report file: ' + conflictRptFile
+        sys.exit(1)
+    try:
         fpBeforeAfterRpt = open(beforeAfterRptFile, 'a')
     except:
         print 'Cannot open report file: ' + beforeAfterRptFile
@@ -373,6 +536,7 @@ def closeFiles ():
     fpInvEvidRpt.close()
     fpInvEditorRpt.close()
     fpMultiMCVRpt.close()
+    fpConflictRpt.close()
     fpBeforeAfterRpt.close()
     return
 
@@ -559,7 +723,61 @@ def loadTempTable ():
     return
 
 
+# Purpose: Create report for marker type/MCV feature type conflict
+# Returns: Nothing
+# Assumes: Nothing
+# Effects: Nothing
+# Throws: Nothing
 #
+def createMarkerTypeConflictReport():
+    global conflictCt, nonfatalReportNames
+    print 'Markers with conflict between Marker Type and MCV Marker Type Report'
+    sys.stdout.flush()
+    fpConflictRpt.write(string.center('Markers  with conflict between Marker Type and the MCV Marker Type',136) + NL)
+    fpConflictRpt.write(string.center('(' + timestamp + ')',136) + 2*NL)
+    fpConflictRpt.write('%-16s  %-20s  %-30s  %-30s  %-30s%s' %
+                     ('MGI ID','Marker Type','MCV Term',
+                      'MCV Marker Type Term','Load-Assigned MCV Term',NL))
+    fpConflictRpt.write(16*'-' + '  ' + 20*'-' + '  ' + \
+                      30*'-' + '  ' + 30*'-' + '  ' + 30*'-' + NL)
+
+    cmds = []
+    #
+    # Get the MGI ID and Term IDs from the temp table
+    #
+    cmds.append('select tmp.termID, ' + \
+                       'tmp.mgiID ' + \
+                 'from tempdb..' + tempTable + ' tmp ' + \
+                 'where tmp.mgiID is not null ' + \
+                 'order by tmp.mgiID')
+
+    results = db.sql(cmds,'auto')
+    for r in results[0]:
+	# get marker type
+        mgiID = r['mgiID']
+	if not mgiIdToMkrTypeDict.has_key(mgiID):
+	    #print 'MGI ID: %s not primary or not valid' % mgiID
+	    continue
+	mkrType = mgiIdToMkrTypeDict[mgiID]
+	# get term
+	termID = r['termID']
+	mcvTerm = termIDToTermDict[termID]
+	# get mcv marker type term and the corresponding marker type
+	mcvMkrTypeTerm = mcvTermToParentMkrTypeTermDict[mcvTerm]
+	mcvMkrType = mcvTermToMkrTypeDict[mcvMkrTypeTerm]
+	if mkrType != mcvMkrType:
+	    conflictCt += 1
+
+	    loadAssignedTerm = mkrTypeToAssocMCVTermDict[mkrType]
+
+	    #print 'mgiID: %s mkrType: %s mcvTerm: %s mcvMkrTypeTerm: %s loadAssignedTerm: %s' % (mgiID, mkrType, mcvTerm, mcvMkrTypeTerm, loadAssignedTerm)
+	    fpConflictRpt.write('%-16s  %-20s  %-30s  %-30s  %-30s%s' %
+            (mgiID, mkrType, mcvTerm, mcvMkrTypeTerm, loadAssignedTerm, NL))
+    fpConflictRpt.write(NL + 'Number of Conflicts between Marker Type ' +
+	'and MCV Marker Type: ' + str(conflictCt) + NL)
+    if conflictCt > 0 and not conflictRptFile in nonfatalReportNames:
+	nonfatalReportNames.append(conflictRptFile + NL)
+
 # Purpose: Create the invalid marker report.
 # Returns: Nothing
 # Assumes: Nothing
@@ -980,10 +1198,9 @@ def createMultipleMCVReport():
 		fpMultiMCVRpt.write('%-20s  %-16s  %-20s  %-30s%s' %
 		(mgiID, symbol, termID, term, NL))    
     fpMultiMCVRpt.write(NL + 'Number of Markers with Multiple MCV Annotations: ' + str(multiCt) + NL)
-    if multiCt > 0:
-	if not multiMcvRptFile in nonfatalReportNames:
-	    #print 'writing multiMcvRptFile to nonfatalReportNames'
-	    nonfatalReportNames.append(multiMcvRptFile + NL)
+    if multiCt > 0 and not multiMcvRptFile in nonfatalReportNames:
+	#print 'writing multiMcvRptFile to nonfatalReportNames'
+	nonfatalReportNames.append(multiMcvRptFile + NL)
 
     return
 
@@ -1066,6 +1283,7 @@ def createAnnotFile ():
 checkArgs()
 init()
 
+createMarkerTypeConflictReport()
 createInvMarkerReport()
 createSecMarkerReport()
 createInvTermIdReport()
@@ -1094,12 +1312,13 @@ names = string.join(fatalReportNames,'' )
 fpRptNamesRpt.write(names)
 
 fpRptNamesRpt.close()
+db.useOneConnection(0)
 
 # multiple annotations in the input are Ok
 # will not prevent loading
 if errorCount > 0: # fatal errors
     sys.exit(3)
-elif multiCt > 0:   # multiple annotations in the input are Ok
+elif multiCt > 0 or conflictCt > 0:
     sys.exit(2)
 else:
     sys.exit(0)
