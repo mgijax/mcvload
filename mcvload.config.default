@@ -98,13 +98,15 @@ INVALID_JNUM_RPT=${RPTDIR}/invalid_jnum.rpt
 INVALID_EVID_RPT=${RPTDIR}/invalid_evid.rpt
 INVALID_EDITOR_RPT=${RPTDIR}/invalid_editor.rpt
 MULTIPLE_MCV_RPT=${RPTDIR}/multiple_mcv.rpt
+MKR_TYPE_CONFLICT_RPT=${RPTDIR}/markertype_conflict.rpt
 BEFORE_AFTER_RPT=${RPTDIR}/before_after.rpt
 RPT_NAMES_RPT=${RPTDIR}/reportsWithDiscrepancies.rpt
 
 export SANITY_RPT
 export INVALID_MARKER_RPT SEC_MARKER_RPT INVALID_TERMID_RPT 
 export INVALID_JNUM_RPT INVALID_EVID_RPT INVALID_EDITOR_RPT
-export MULTIPLE_MCV_RPT BEFORE_AFTER_RPT RPT_NAMES_RPT
+export MULTIPLE_MCV_RPT MKR_TYPE_CONFLICT_RPT
+export BEFORE_AFTER_RPT RPT_NAMES_RPT
 
 # Number of columns expected for the input file (for sanity check).
 #
