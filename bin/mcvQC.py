@@ -737,7 +737,7 @@ def createMarkerTypeConflictReport():
     fpConflictRpt.write(string.center('(' + timestamp + ')',136) + 2*NL)
     fpConflictRpt.write('%-16s  %-20s  %-30s  %-30s  %-30s%s' %
                      ('MGI ID','Marker Type','MCV Term',
-                      'MCV Marker Type Term','Load-Assigned MCV Term',NL))
+                      'MCV Marker Type Term','Web Display MCV Term',NL))
     fpConflictRpt.write(16*'-' + '  ' + 20*'-' + '  ' + \
                       30*'-' + '  ' + 30*'-' + '  ' + 30*'-' + NL)
 
