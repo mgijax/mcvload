@@ -49,7 +49,7 @@
 
 cd `dirname $0`
 LOG=`pwd`/run_mcv_vocload.log
-rm -rf ${LOG}
+touch ${LOG}
 
 CONFIG_LOAD=../mcvload.config
 echo $CONFIG_LOAD
@@ -96,7 +96,7 @@ fi
 
 . ${CONFIG_VOCLOAD}
 
-LOG_RUNVOCLOAD=${RUNTIME_DIR}/runvocload.log
+LOG_RUNVOCLOAD=${LOGDIR}/runvocload.log
 rm -rf LOG_RUNVOCLOAD
 
 #####################################

@@ -1,3 +1,9 @@
+TAG: mcvload-4-4-0-2
+DATE: 07/19/2010
+STAFF: sc
+CHANGES: run_mcv_vocload.sh - changed log dirctory
+for new installation RUNTIME_DIR not yet created
+
 TAG: mcvload-4-4-0-1
 DATE: 07/14/2010
 STAFF: sc

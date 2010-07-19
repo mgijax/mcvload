@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/sh -x
 #
 #  mcvload.sh
 ###########################################################################
@@ -76,7 +76,7 @@ then
 fi
 
 . ${CONFIG_LOAD}
-
+echo "MGD_DBNAME: $MGD_DBNAME"
 #
 # Verify annotation configuration file
 #
@@ -156,7 +156,8 @@ fi
 echo "" >> ${LOG_DIAG}
 date >> ${LOG_DIAG}
 echo "Generate the sanity/QC reports" | tee -a ${LOG_DIAG}
-${MCVLOAD_QC_SH} ${INPUT_FILE_DEFAULT} ${RUNTYPE} 2>&1 >> ${LOG_DIAG}
+echo "MCVLOAD_QC_SH: ${MCVLOAD_QC_SH} INPUT_FILE_DEFAULT: ${INPUT_FILE_DEFAULT} RUNTYPE: ${RUNTYPE}"
+${MCVLOAD_QC_SH} ${INPUT_FILE_DEFAULT} ${RUNTYPE} 2>&1 >> ${LOG_DIAG} 
 STAT=$?
 checkStatus ${STAT} "QC reports"
 if [ ${STAT} -eq 1 ]
