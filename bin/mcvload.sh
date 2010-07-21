@@ -1,4 +1,4 @@
-#!/bin/sh -x
+#!/bin/sh
 #
 #  mcvload.sh
 ###########################################################################
@@ -138,6 +138,7 @@ preload ${OUTPUTDIR}
 # and is more recent than the input file, the load does not need to be run.
 #
 LASTRUN_FILE=${INPUTDIR}/lastrun
+
 if [ -f ${LASTRUN_FILE} ]
 then
     if /usr/local/bin/test ${LASTRUN_FILE} -nt ${INPUT_FILE_DEFAULT}
@@ -173,7 +174,7 @@ echo "" >> ${LOG_DIAG}
 date >> ${LOG_DIAG}
 echo "Running MCV/Marker annotation load" >> ${LOG_DIAG}
 cd ${OUTPUTDIR}
-${ANNOTLOAD_CSH} ${CONFIG_ANNOTLOAD} >> ${LOG_DIAG} 
+${ANNOTLOAD_CSH} ${CONFIG_ANNOTLOAD} mcv >> ${LOG_DIAG} 
 STAT=$?
 checkStatus ${STAT} "${ANNOTLOAD_CSH} ${CONFIG_ANNOT}"
 
