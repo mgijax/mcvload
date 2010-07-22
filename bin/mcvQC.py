@@ -33,8 +33,11 @@
 #	   INVALID_EDITOR_RPT
 #	   MULTIPLE_MCV_RPT
 #	   MKR_TYPE_CONFLICT_RPT
+#	   GRPNG_TERM_RPT
 #	   BEFORE_AFTER_RPT
+#	   RPT_NAMES_RPT
 #          ANNOT_FILE
+#	   GROUPING_TERMIDS
 #
 #      The following environment variable is set by the wrapper script:
 #
@@ -92,8 +95,8 @@
 #      3) Open the input/output files.
 #      4) Load the records from the input file into the temp table.
 #      5) Generate the QC reports.
-#      7) Create the annotation file from the input records that do not
-#         have discrepancies (for a "live" run only).
+#      7) Create the annotation file if no fatal discrepancies
+#         (for a "live" run only).
 #
 #  Notes:  None
 #
@@ -130,6 +133,9 @@ bcpFile = os.environ['INPUT_FILE_BCP']
 # annotation file name used in 'live' mode only
 annotFile = os.environ['ANNOT_FILE']
 
+# grouping terms
+groupingTermIds = os.environ['GROUPING_TERMIDS']
+
 # Report file names
 invMrkRptFile = os.environ['INVALID_MARKER_RPT']
 secMrkRptFile = os.environ['SEC_MARKER_RPT']
@@ -139,6 +145,7 @@ invEvidRptFile = os.environ['INVALID_EVID_RPT']
 invEditorRptFile = os.environ['INVALID_EDITOR_RPT']
 multiMcvRptFile = os.environ['MULTIPLE_MCV_RPT']
 conflictRptFile = os.environ['MKR_TYPE_CONFLICT_RPT']
+groupingTermRptFile = os.environ['GRPNG_TERM_RPT']
 beforeAfterRptFile =  os.environ['BEFORE_AFTER_RPT']
 rptNamesFile = os.environ['RPT_NAMES_RPT']
 
@@ -331,7 +338,6 @@ def init ():
 		from MRK_Types''', 'auto')
     for r in results:
 	mkrTypeKeyToMkrTypeDict[ r['_Marker_Type_key'] ] =  r['name']
-######
     # parse the MCV Note and load lookups
     # we store the association of a marker type to a MCV
     # term in the term Note. Only MCV terms which correspond to
@@ -432,7 +438,6 @@ def init ():
         mkrKey = r['_Marker_key']
         mkrKeyToMkrTypeKeyDict[mkrKey] = mkrTypeKey
 
-#########	
     return
 
 
@@ -447,13 +452,13 @@ def openFiles ():
     global fpInput, fpBCP
     global fpInvMrkRpt, fpSecMrkRpt, fpInvTermIdRpt
     global fpInvJNumRpt, fpInvEvidRpt, fpInvEditorRpt
-    global fpMultiMCVRpt, fpConflictRpt, fpBeforeAfterRpt, fpRptNamesRpt
+    global fpMultiMCVRpt, fpConflictRpt, fpGroupingTermRpt
+    global fpBeforeAfterRpt, fpRptNamesRpt
 
     #
     # Open the input file.
     #
     try:
-	print 'Opening input file %s' % inputFile
         fpInput = open(inputFile, 'r')
     except:
         print 'Cannot open input file: ' + inputFile
@@ -512,6 +517,11 @@ def openFiles ():
         print 'Cannot open report file: ' + conflictRptFile
         sys.exit(1)
     try:
+        fpGroupingTermRpt = open(groupingTermRptFile, 'a')
+    except:
+        print 'Cannot open report file: ' + groupingTermRptFile
+        sys.exit(1)
+    try:
         fpBeforeAfterRpt = open(beforeAfterRptFile, 'a')
     except:
         print 'Cannot open report file: ' + beforeAfterRptFile
@@ -542,6 +552,7 @@ def closeFiles ():
     fpInvEditorRpt.close()
     fpMultiMCVRpt.close()
     fpConflictRpt.close()
+    fpGroupingTermRpt.close()
     fpBeforeAfterRpt.close()
     return
 
@@ -736,7 +747,7 @@ def loadTempTable ():
 #
 def createMarkerTypeConflictReport():
     global nonfatalCount, nonfatalReportNames
-    print 'Markers with conflict between Marker Type and MCV Marker Type Report'
+    print 'Create the Markers with conflict between Marker Type and MCV Marker Type Report'
     sys.stdout.flush()
     fpConflictRpt.write(string.center('Markers  with conflict between Marker Type and the MCV Marker Type',136) + NL)
     fpConflictRpt.write(string.center('(' + timestamp + ')',136) + 2*NL)
@@ -1031,6 +1042,53 @@ def createInvTermIdReport ():
     return
 
 #
+# Purpose: Create the annotation to grouping terms rpt
+# Returns: Nothing
+# Assumes: Nothing
+# Effects: Nothing
+# Throws: Nothing
+#
+def createGroupingTermIdReport ():
+    global fatalCount, fatalReportNames
+
+    print 'Create the Grouping Term report'
+    sys.stdout.flush()
+    fpGroupingTermRpt.write(string.center('Annotations to Grouping Terms Report',80) + NL)
+    fpGroupingTermRpt.write(string.center('(' + timestamp + ')',80) + 2*NL)
+    fpGroupingTermRpt.write('%-20s %-20s%s' % ('MGI ID', 'Term ID',NL))
+    fpGroupingTermRpt.write(20*'-' + ' ' + 20*'-' + NL)
+    quotedTerms=''
+    for t in string.split(groupingTermIds, ','):
+	quotedTerms = '%s"%s",' % (quotedTerms, t)
+    quotedTerms = quotedTerms[:-1]
+    cmds = []
+    #
+    # Find any annotations to grouping IDs
+    #
+    cmds.append('select tmp.mgiID, tmp.termID ' + \
+                'from tempdb..' + tempTable + ' tmp ' + \
+                'where tmp.termID is not null ' + \
+	        'and tmp.termID in (%s) ' % quotedTerms + \
+                'order by tmp.termID')
+    results = db.sql(cmds,'auto')
+
+    #
+    # Write a record to the report for each grouping term annotation
+    #
+    for r in results[0]:
+	mgiID = r['mgiID']
+        termID = r['termID']
+        fpGroupingTermRpt.write('%-20s%s%-20s%s' % (mgiID, TAB, termID, NL))
+
+    numErrors = len(results[0])
+    fpGroupingTermRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
+    fatalCount += numErrors
+    if numErrors > 0:
+        if not groupingTermRptFile in fatalReportNames:
+            fatalReportNames.append(groupingTermRptFile + NL)
+
+    return
+#
 # Purpose: Create the invalid J Number report
 # Returns: Nothing
 # Assumes: Nothing
@@ -1307,6 +1365,8 @@ createInvEvidReport()
 createInvEditorReport()
 createMultipleMCVReport()
 createMarkerTypeConflictReport()
+createGroupingTermIdReport()
+
 if fatalCount == 0:
     createBeforeAfterReport()
     nonfatalReportNames.append('\nBefore/After file generated. See: %s\n' % beforeAfterRptFile)
