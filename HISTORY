@@ -1,8 +1,10 @@
+TAG: mcvload-4-4-0-5
 TAG: mcvload-4-4-0-4
 DATE: 07/22/2010
 STAFF: sc
 CHANGES: 
 1) mcvload.config, mcvQC.sh/py - added new grouping terms report
+2) removed some debug statements
 
 TAG: mcvload-4-4-0-3
 DATE: 07/21/2010
