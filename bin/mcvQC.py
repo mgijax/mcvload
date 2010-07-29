@@ -379,15 +379,23 @@ def init ():
             notes[term].append(chunk)
         # add mapping of key to term
         #mcvKeyToTermDict[mcvKey] = term
-    # parse the marker type from the note
+    # parse the marker type from the note, if there is one
     for term in notes.keys():
         note = string.join(notes[term], '')
+        if not note[0:11] == 'Marker_Type':
+            continue
+
         # parse the note
-        tokens = string.split(note, '=')
+	tokens = string.split(note, ';')
+	print tokens
+	mType = tokens[0]
+	tokens = string.split(mType, '=')
+	
         # 2nd token is the marker type key
         mkrTypeKey = int(string.strip(tokens[1]))
+	print mkrTypeKey
 	mkrType = mkrTypeKeyToMkrTypeDict[mkrTypeKey]
-        # There is only 1  MCV term per MGI Mkr type?
+        # There is only 1  MCV term per MGI Mkr type
         mkrTypeToAssocMCVTermDict[mkrType]= term
         mcvTermToMkrTypeDict[term] = mkrType
 
