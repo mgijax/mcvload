@@ -128,6 +128,11 @@ MCVLOAD_QC_SH=${MCVLOAD}/bin/mcvQC.sh
 
 export MCVLOAD_QC MCVLOAD_QC_SC
 
+# Full path to add columns script
+ADD_COLUMNS_SH=${MCVLOAD}/bin/addColumns.sh
+
+export ADD_COLUMNS_SH
+
 # set of grouping term ids for mcvQC.py
 GROUPING_TERMIDS="MCV:0000029, MCV:0000001"
 
