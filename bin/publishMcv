@@ -76,9 +76,7 @@ fi
 cd ${CURRENT_DIR}
 echo "Source File:      ${INPUT_FILE}"
 echo "Destination File: ${INPUT_FILE_DEFAULT}"
-rm ${INPUT_FILE_DEFAULT}
-echo "cat ${INPUT_FILE} | tail +2 > ${INPUT_FILE_DEFAULT}"
-cat ${INPUT_FILE} | tail +2 > ${INPUT_FILE_DEFAULT}
+cp ${INPUT_FILE} ${INPUT_FILE_DEFAULT}
 if [ $? -eq 0 ]
 then
     echo "Copy successful"

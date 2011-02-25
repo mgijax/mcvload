@@ -387,13 +387,12 @@ def init ():
 
         # parse the note
 	tokens = string.split(note, ';')
-	print tokens
 	mType = tokens[0]
 	tokens = string.split(mType, '=')
 	
         # 2nd token is the marker type key
         mkrTypeKey = int(string.strip(tokens[1]))
-	print mkrTypeKey
+	#print mkrTypeKey
 	mkrType = mkrTypeKeyToMkrTypeDict[mkrTypeKey]
         # There is only 1  MCV term per MGI Mkr type
         mkrTypeToAssocMCVTermDict[mkrType]= term
@@ -611,7 +610,6 @@ def loadTempTable ():
 	qualExists = len(re.findall('[a-zA-Z0-9]',qual))
 	editorExists = len(re.findall('[a-zA-Z0-9]',editor))
 	dateExists = len(re.findall('[a-zA-Z0-9]',date))
-	notesExists = len(re.findall('[a-zA-Z0-9]',notes))
 	
 	#
 	# Special Case
