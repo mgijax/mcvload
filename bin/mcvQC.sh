@@ -193,7 +193,7 @@ done
 # 3) Extract only lines that have alphanumerics (excludes blank lines)
 # 4) Remove any Ctrl-M characters (dos2unix)
 #
-cat ${INPUT_FILE} | tail +2 | cut -d'	' -f1-10 | sed 's/ //g' | grep '[0-9A-Za-z]' > ${INPUT_FILE_QC}
+cat ${INPUT_FILE} | tail -n +2 | cut -d'	' -f1-10 | sed 's/ //g' | grep '[0-9A-Za-z]' > ${INPUT_FILE_QC}
 dos2unix ${INPUT_FILE_QC} ${INPUT_FILE_QC} 2>/dev/null
 #
 # FUNCTION: Check for duplicate lines in an input file and write the lines
