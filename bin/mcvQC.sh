@@ -313,7 +313,9 @@ EOSQL
 #
 echo "" >> ${LOG}
 date >> ${LOG}
-echo "\nGenerate the QC reports\n" | tee -a ${LOG}
+echo "" | tee -a ${LOG}
+echo "Generate the QC reports" | tee -a ${LOG}
+echo "" | tee -a ${LOG}
 { ${MCVLOAD_QC} ${INPUT_FILE_QC} 2>&1; echo $? > ${TMP_FILE}; } >> ${LOG}
 if [ `cat ${TMP_FILE}` -eq 1 ]
 then
