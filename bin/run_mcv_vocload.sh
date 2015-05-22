@@ -117,24 +117,23 @@ checkStatus ${STAT} "${VOCLOAD}/runOBOFullLoad.sh ${CONFIG_VOCLOAD}"
 
 echo "Moving SO ID association to MCV term to SO ldb" | tee -a ${LOG_RUNVOCLOAD}
 
-cat - <<EOSQL | isql -S${MGD_DBSERVER} -D${MGD_DBNAME} -U${MGI_DBUSER} -P`cat ${MGI_DBPASSWORDFILE}` -e  >> ${LOG_RUNVOCLOAD}
+cat - <<EOSQL | psql -h${PG_DBSERVER} -d${PG_DBNAME} -U mgd_dbo -e  >> ${LOG_RUNVOCLOAD}
 
 select _Accession_key
-into #so
+into temp so
 from ACC_Accession
 where _MGIType_key = 13
 and preferred = 0
 and _LogicalDB_key = 146
-and prefixPart = "SO:"
-go
+and prefixPart = 'SO:'
+;
 
 update ACC_Accession
 set a._LogicalDB_key = 145, a.preferred = 1, private = 1
-from ACC_Accession a, #so s
+from ACC_Accession a, so s
 where a._Accession_key = s._Accession_key
-go
+;
 
-quit
 EOSQL
 
 echo 'Done moving SO ID to SO ldb' | tee -a ${LOG_RUNVOCLOAD}
