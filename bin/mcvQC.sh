@@ -284,15 +284,15 @@ create table ${MCVLOAD_TEMP_TABLE} (
 )
 ;
 
-create  index idx_termID on ${MCVLOAD_TEMP_TABLE} (termID) ;
+create  index idx_termID on ${MCVLOAD_TEMP_TABLE} (lower(termID)) ;
 
-create  index idx_mgiID on ${MCVLOAD_TEMP_TABLE} (mgiID) ;
+create  index idx_mgiID on ${MCVLOAD_TEMP_TABLE} (lower(mgiID)) ;
 
-create  index idx_jNum on ${MCVLOAD_TEMP_TABLE} (jNum) ;
+create  index idx_jNum on ${MCVLOAD_TEMP_TABLE} (lower(jNum)) ;
 
-create  index idx_evidCode on ${MCVLOAD_TEMP_TABLE} (evidCode) ;
+create  index idx_evidCode on ${MCVLOAD_TEMP_TABLE} (lower(evidCode)) ;
 
-create  index idx_editor on ${MCVLOAD_TEMP_TABLE} (editor) ;
+create  index idx_editor on ${MCVLOAD_TEMP_TABLE} (lower(editor)) ;
 
 grant all on ${MCVLOAD_TEMP_TABLE} to public ;
 

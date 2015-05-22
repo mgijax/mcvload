@@ -149,6 +149,8 @@ groupingTermRptFile = os.environ['GRPNG_TERM_RPT']
 beforeAfterRptFile =  os.environ['BEFORE_AFTER_RPT']
 rptNamesFile = os.environ['RPT_NAMES_RPT']
 
+BCP_COMMAND = os.environ['PG_DBUTILS'] + '/bin/bcpin.csh'
+
 timestamp = mgi_utils.date()
 
 # current number of fatal errors
@@ -226,8 +228,6 @@ def checkArgs ():
 
     inputFile = sys.argv[1]
 
-    return
-
 
 #
 # Purpose: Perform initialization steps.
@@ -265,7 +265,7 @@ def init ():
 	from ACC_Accession a, MRK_Marker m
 	where a._MGIType_key = 2
 	and a._LogicalDB_key = 1
-	and a.prefixPart = "MGI:"
+	and a.prefixPart = 'MGI:'
 	and a._Object_key = m._Marker_key''', 'auto')
 
     for r in results:
@@ -289,11 +289,11 @@ def init ():
             and a1._MGIType_key = 13
             and a1._LogicalDB_key in (145, 146)
             and a1.preferred = 1
-	    and a1.prefixPart = "MCV:"
+	    and a1.prefixPart = 'MCV:'
             and v._Object_key = a2._Object_key
             and a2._MGIType_key = 2
             and a2._LogicalDB_key = 1
-            and a2.prefixPart = "MGI:"''', 'auto')
+            and a2.prefixPart = 'MGI:' ''', 'auto')
     for r in results:
         mgiID = r['mgiID']
         termID = r['termID']
@@ -306,7 +306,7 @@ def init ():
     # loaded from the input file
     #
     results = db.sql('select tmp.termID, tmp.mgiID ' + \
-                'from tempdb..' + tempTable + ' tmp ', 'auto')
+                'from ' + tempTable + ' tmp ', 'auto')
                 #'where tmp.mgiID is not null ' + \
                 #'and tmp.termID is not null', 'auto')
 
@@ -329,7 +329,7 @@ def init ():
 		and a._MGIType_key = 2
 		and a._LogicalDB_key = 1
 		and a.preferred = 1
-		and a.prefixPart = "MGI:"
+		and a.prefixPart = 'MGI:'
 		and m._Marker_Type_key = t._Marker_Type_key''', 'auto')
     for r in results:
 	mgiIdToMkrTypeDict[r['mgiID']] = r['mkrType']
@@ -354,21 +354,21 @@ def init ():
     cmds = []
     cmds.append('select n._Object_key, rtrim(nc.note) as chunk, ' + \
 	'nc.sequenceNum ' + \
-        'into #notes ' + \
+        'into temp notes ' + \
         'from MGI_Note n, MGI_NoteChunk nc ' + \
         'where n._MGIType_key = 13 ' + \
             'and n._NoteType_key = 1001 ' + \
             'and n._Note_key = nc._Note_key')
-    cmds.append('create index idx1 on #notes(_Object_key)')
+    cmds.append('create index notes_idx1 on notes(_Object_key)')
     cmds.append('select t._Term_key, t.term, n.chunk ' + \
-            'from VOC_Term t, #notes n ' + \
+            'from VOC_Term t left outer join notes n ' + \
+		'n._object_key = t._term_key ' + \
             'where t._Vocab_key = 79 ' + \
-            'and t._Term_key *= n._Object_key ' + \
+            'and t._Term_key = n._Object_key ' + \
             'order by t._Term_key, n.sequenceNum')
     results = db.sql(cmds, 'auto')
     notes = {} # map the terms to their note chunks
     for r in results[2]:
-        #mcvKey = r['_Term_key']
         term = r['term']
         chunk = r['chunk']
         # if there is a note chunk add it to the notes dictionary
@@ -377,8 +377,6 @@ def init ():
             if not notes.has_key(term):
                 notes[term] = []
             notes[term].append(chunk)
-        # add mapping of key to term
-        #mcvKeyToTermDict[mcvKey] = term
     # parse the marker type from the note, if there is one
     for term in notes.keys():
         note = string.join(notes[term], '')
@@ -392,7 +390,6 @@ def init ():
 	
         # 2nd token is the marker type key
         mkrTypeKey = int(string.strip(tokens[1]))
-	#print mkrTypeKey
 	mkrType = mkrTypeKeyToMkrTypeDict[mkrTypeKey]
         # There is only 1  MCV term per MGI Mkr type
         mkrTypeToAssocMCVTermDict[mkrType]= term
@@ -405,15 +402,15 @@ def init ():
     #
     cmds = []
     cmds.append('select _AncestorObject_key, _DescendentObject_key ' + \
-	    'into #clos ' + \
+	    'into temp clos ' + \
             'from DAG_Closure ' + \
             'where _DAG_key = 9 ' + \
             'and _MGIType_key = 13')
-    cmds.append('create index idx1 on #clos(_AncestorObject_key)')
-    cmds.append('create index idx2 on #clos(_DescendentObject_key)')
+    cmds.append('create index clos_idx1 on clos(_AncestorObject_key)')
+    cmds.append('create index clos_idx2 on clos(_DescendentObject_key)')
     cmds.append('select t1.term as ancestorTerm, ' + \
 		't2.term as descendentTerm ' + \
-		'from #clos c, VOC_Term t1, VOC_Term t2 ' + \
+		'from clos c, VOC_Term t1, VOC_Term t2 ' + \
 		'where c._AncestorObject_key = t1._Term_key ' + \
 		'and c._DescendentObject_key = t2._Term_key ' + \
                 'order by t2.term')
@@ -444,8 +441,6 @@ def init ():
         mkrTypeKey = r['_Marker_Type_key']
         mkrKey = r['_Marker_key']
         mkrKeyToMkrTypeKeyDict[mkrKey] = mkrTypeKey
-
-    return
 
 
 #
@@ -539,8 +534,6 @@ def openFiles ():
         print 'Cannot open report file: ' + rptNamesFile
         sys.exit(1)
 
-    return
-
 
 #
 # Purpose: Close the files.
@@ -561,7 +554,6 @@ def closeFiles ():
     fpConflictRpt.close()
     fpGroupingTermRpt.close()
     fpBeforeAfterRpt.close()
-    return
 
 
 #
@@ -734,15 +726,13 @@ def loadTempTable ():
     print 'Load the input data into the temp table: ' + tempTable
     sys.stdout.flush()
 
-    bcpCmd = 'cat %s | bcp tempdb..%s in %s -c -t"%s" -S%s -U%s' % \
-	(passwordFile, tempTable, bcpFile, TAB, db.get_sqlServer(), \
-	    db.get_sqlUser())
+    bcpCmd = '%s %s %s %s "/" %s "\\t" "\\n" mgd' % \
+        (BCP_COMMAND, db.get_sqlServer(), db.get_sqlDatabase(),tempTable,
+        bcpFile)
     rc = os.system(bcpCmd)
     if rc <> 0:
         closeFiles()
         sys.exit(1)
-
-    return
 
 
 # Purpose: Create report for marker type/MCV feature type conflict
@@ -769,9 +759,9 @@ def createMarkerTypeConflictReport():
     #
     cmds.append('select tmp.termID, ' + \
                        'tmp.mgiID ' + \
-                 'from tempdb..' + tempTable + ' tmp ' + \
+                 'from ' + tempTable + ' tmp ' + \
                  'where tmp.mgiID is not null ' + \
-                 'order by tmp.mgiID')
+                 'order by lower(tmp.mgiID)')
 
     results = db.sql(cmds,'auto')
     conflictCt = 0
@@ -840,28 +830,28 @@ def createInvMarkerReport ():
     #
     cmds.append('select tmp.termID, ' + \
                        'tmp.mgiID, ' + \
-                       'null "name", ' + \
-                       'null "status" ' + \
-                'from tempdb..' + tempTable + ' tmp ' + \
+                       'null as name, ' + \
+                       'null as status ' + \
+                'from ' + tempTable + ' tmp ' + \
                 'where tmp.mgiID is not null and ' + \
                       'not exists (select 1 ' + \
                                   'from ACC_Accession a ' + \
-                                  'where a.accID = tmp.mgiID) ' + \
+                                  'where lower(a.accID) = lower(tmp.mgiID)) ' + \
                 'union ' + \
                 'select tmp.termID, ' + \
                        'tmp.mgiID, ' + \
                        't.name, ' + \
-                       'null "status" ' + \
-                'from tempdb..' + tempTable + ' tmp, ' + \
+                       'null as status ' + \
+                'from ' + tempTable + ' tmp, ' + \
                      'ACC_Accession a1, ' + \
                      'ACC_MGIType t ' + \
                 'where tmp.mgiID is not null and ' + \
-                      'a1.accID = tmp.mgiID and ' + \
+                      'lower(a1.accID) = lower(tmp.mgiID) and ' + \
                       'a1._LogicalDB_key = 1 and ' + \
                       'a1._MGIType_key != 2 and ' + \
                       'not exists (select 1 ' + \
                                   'from ACC_Accession a2 ' + \
-                                  'where a2.accID = tmp.mgiID and ' + \
+                                  'where lower(a2.accID) = lower(tmp.mgiID) and ' + \
                                         'a2._LogicalDB_key = 1 and ' + \
                                         'a2._MGIType_key = 2) and ' + \
                       'a1._MGIType_key = t._MGIType_key ' + \
@@ -870,20 +860,20 @@ def createInvMarkerReport ():
                        'tmp.mgiID, ' + \
                        't.name, ' + \
                        'ms.status ' + \
-                'from tempdb..' + tempTable + ' tmp, ' + \
+                'from ' + tempTable + ' tmp, ' + \
                      'ACC_Accession a, ' + \
                      'ACC_MGIType t, ' + \
                      'MRK_Marker m, ' + \
                      'MRK_Status ms ' + \
                 'where tmp.mgiID is not null and ' + \
-                      'a.accID = tmp.mgiID and ' + \
+                      'lower(a.accID) = lower(tmp.mgiID) and ' + \
                       'a._LogicalDB_key = 1 and ' + \
                       'a._MGIType_key = 2 and ' + \
                       'a._MGIType_key = t._MGIType_key and ' + \
                       'a._Object_key = m._Marker_key and ' + \
                       'm._Marker_Status_key not in (1,3) and ' + \
                       'm._Marker_Status_key = ms._Marker_Status_key ' + \
-                'order by tmp.mgiID, tmp.termID')
+                'order by lower(mgiID), lower(termID)')
 
     results = db.sql(cmds,'auto')
 
@@ -917,7 +907,6 @@ def createInvMarkerReport ():
     if numErrors > 0:
         if not invMrkRptFile in nonfatalReportNames:
             nonfatalReportNames.append(invMrkRptFile + NL)
-    return
 
 
 #
@@ -950,12 +939,12 @@ def createSecMarkerReport ():
                        'tmp.mgiID, ' + \
                        'm.symbol, ' + \
                        'a2.accID ' + \
-                'from tempdb..' + tempTable + ' tmp, ' + \
+                'from ' + tempTable + ' tmp, ' + \
                      'ACC_Accession a1, ' + \
                      'ACC_Accession a2, ' + \
                      'MRK_Marker m ' + \
                 'where tmp.mgiID is not null and ' + \
-                      'tmp.mgiID = a1.accID and ' + \
+                      'lower(tmp.mgiID) = lower(a1.accID) and ' + \
                       'a1._MGIType_key = 2 and ' + \
                       'a1._LogicalDB_key = 1 and ' + \
                       'a1.preferred = 0 and ' + \
@@ -964,7 +953,7 @@ def createSecMarkerReport ():
                       'a2._LogicalDB_key = 1 and ' + \
                       'a2.preferred = 1 and ' + \
                       'a2._Object_key = m._Marker_key ' + \
-                'order by tmp.mgiID, tmp.termID')
+                'order by lower(tmp.mgiID), lower(tmp.termID)')
 
     results = db.sql(cmds,'auto')
 
@@ -978,24 +967,12 @@ def createSecMarkerReport ():
         fpSecMrkRpt.write('%-20s  %-16s  %-50s  %-16s%s' %
             (termID, mgiID, r['symbol'], r['accID'], NL))
 
-        #
-        # If the MGI ID and term ID are found in the annotation
-        # dictionary, remove the term ID from the list so the
-        # annotation doesn't get written to the annotation file.
-        #
-        #if liveRun == "1":
-        #    if annot.has_key(mgiID):
-        #        list = annot[mgiID]
-        #        if list.count(termID) > 0:
-        #            list.remove(termID)
-        #        annot[mgiID] = list
     numErrors = len(results[0])
     fpSecMrkRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
     if numErrors > 0:
         if not secMrkRptFile in nonfatalReportNames:
             nonfatalReportNames.append(secMrkRptFile + NL)
     nonfatalCount += numErrors
-    return
 
 #
 # Purpose: Create the invalid MCV/SO term ID report.
@@ -1019,14 +996,14 @@ def createInvTermIdReport ():
     # Find any term IDs from the input data that are not in the database.
     #
     cmds.append('select tmp.termID ' + \
-                'from tempdb..' + tempTable + ' tmp ' + \
+                'from ' + tempTable + ' tmp ' + \
                 'where tmp.termID is not null and ' + \
                       'not exists (select 1 ' + \
                                   'from ACC_Accession a ' + \
-                                  'where a.accID = tmp.termID and ' + \
+                                  'where lower(a.accID) = lower(tmp.termID) and ' + \
                                         'a._MGIType_key = 13 and ' + \
 					'a._LogicalDB_key in (145,146)) ' + \
-                'order by tmp.termID')
+                'order by lower(tmp.termID)')
 
     results = db.sql(cmds,'auto')
 
@@ -1045,7 +1022,6 @@ def createInvTermIdReport ():
         if not invTermIdRptFile in fatalReportNames:
             fatalReportNames.append(invTermIdRptFile + NL)
 
-    return
 
 #
 # Purpose: Create the annotation to grouping terms rpt
@@ -1072,10 +1048,10 @@ def createGroupingTermIdReport ():
     # Find any annotations to grouping IDs
     #
     cmds.append('select tmp.mgiID, tmp.termID ' + \
-                'from tempdb..' + tempTable + ' tmp ' + \
+                'from ' + tempTable + ' tmp ' + \
                 'where tmp.termID is not null ' + \
-	        'and tmp.termID in (%s) ' % quotedTerms + \
-                'order by tmp.termID')
+	        'and lower(tmp.termID) in (%s) ' % quotedTerms.lower() + \
+                'order by lower(tmp.termID)')
     results = db.sql(cmds,'auto')
 
     #
@@ -1093,7 +1069,6 @@ def createGroupingTermIdReport ():
         if not groupingTermRptFile in fatalReportNames:
             fatalReportNames.append(groupingTermRptFile + NL)
 
-    return
 #
 # Purpose: Create the invalid J Number report
 # Returns: Nothing
@@ -1116,16 +1091,16 @@ def createInvJNumReport ():
     # Find any J Numbers from the input data that are not in the database.
     #
     cmds.append('select tmp.jNum ' + \
-		'from tempdb..' + tempTable + ' tmp ' + \
+		'from ' + tempTable + ' tmp ' + \
 		'where tmp.jNum is not null and ' + \
 		    'not exists (select 1 ' + \
 		    'from ACC_Accession a ' + \
-			  'where a.accID = tmp.jNum and ' + \
+			  'where lower(a.accID) = lower(tmp.jNum) and ' + \
 				'a._MGIType_key = 1 and ' + \
 				'a._LogicalDB_key = 1 and ' + \
-				'a.prefixPart = "J:" and ' + \
+				'a.prefixPart = \'J:\' and ' + \
 				'a.preferred = 1) ' + \
-				'order by tmp.jNum')
+				'order by lower(tmp.jNum)')
     results = db.sql(cmds,'auto')
 
     #
@@ -1141,8 +1116,6 @@ def createInvJNumReport ():
     if numErrors > 0:
         if not invJNumRptFile in fatalReportNames:
             fatalReportNames.append(invJNumRptFile + NL)
- 
-    return
 
 #
 # Purpose: Create the invalid Evidence Code report
@@ -1166,12 +1139,12 @@ def createInvEvidReport ():
     # Find any Evidence Codes from the input data that are not in the database.
     #
     cmds.append('select tmp.evidCode ' + \
-                'from tempdb..' + tempTable + ' tmp ' + \
+                'from ' + tempTable + ' tmp ' + \
                 'where tmp.evidCode is not null and ' + \
                     'not exists (select 1 ' + \
                     'from VOC_Term t ' + \
                           'where t._Vocab_key = 80 and ' + \
-                                'tmp.evidCode = t.term)')
+                                'lower(tmp.evidCode) = lower(t.term))')
     results = db.sql(cmds,'auto')
 
     #
@@ -1188,7 +1161,6 @@ def createInvEvidReport ():
         if not invEvidRptFile in fatalReportNames:
             fatalReportNames.append(invEvidRptFile + NL)
 
-    return
 #
 # Purpose: Create the invalid Editor login report
 # Returns: Nothing
@@ -1211,11 +1183,11 @@ def createInvEditorReport ():
     # Find any Editor logins from the input data that are not in the database.
     #
     cmds.append('select tmp.editor ' + \
-                'from tempdb..' + tempTable + ' tmp ' + \
+                'from ' + tempTable + ' tmp ' + \
                 'where tmp.editor is not null and ' + \
                     'not exists (select 1 ' + \
                     'from MGI_User u ' + \
-                          'where u.login = tmp.editor)')
+                          'where lower(u.login) = lower(tmp.editor))')
     results = db.sql(cmds,'auto')
 
     #
@@ -1232,7 +1204,6 @@ def createInvEditorReport ():
         if not invEditorRptFile in fatalReportNames:
             fatalReportNames.append(invEditorRptFile + NL)
 
-    return
 
 #
 # Purpose: Create report for markers annotatd to mor than one
@@ -1282,7 +1253,6 @@ def createMultipleMCVReport():
 	#print 'writing multiMcvRptFile to nonfatalReportNames'
 	nonfatalReportNames.append(multiMcvRptFile + NL)
     nonfatalCount += multiCt
-    return
 
 #
 # Purpose: For markers represented in the annotation file, list 
@@ -1323,7 +1293,6 @@ def createBeforeAfterReport():
 	    (mgiID, symbol, ','.join(mgdTermIDList), ','.join(mgdTermList), \
 		','.join(inputTermIDList), ','.join(inputTermList), NL))
 
-    return
 #
 # Purpose: Create the annotation file from the dictionary termID/marker
 #          annotations that did not have any discrepancies.
