@@ -361,7 +361,7 @@ def init ():
             'and n._Note_key = nc._Note_key')
     cmds.append('create index notes_idx1 on notes(_Object_key)')
     cmds.append('select t._Term_key, t.term, n.chunk ' + \
-            'from VOC_Term t left outer join notes n ' + \
+            'from VOC_Term t left outer join notes n on ' + \
 		'n._object_key = t._term_key ' + \
             'where t._Vocab_key = 79 ' + \
             'and t._Term_key = n._Object_key ' + \
@@ -873,7 +873,7 @@ def createInvMarkerReport ():
                       'a._Object_key = m._Marker_key and ' + \
                       'm._Marker_Status_key not in (1,3) and ' + \
                       'm._Marker_Status_key = ms._Marker_Status_key ' + \
-                'order by lower(mgiID), lower(termID)')
+                'order by mgiID, termID')
 
     results = db.sql(cmds,'auto')
 
