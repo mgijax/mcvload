@@ -119,8 +119,8 @@ echo "Moving SO ID association to MCV term to SO ldb" | tee -a ${LOG_RUNVOCLOAD}
 
 cat - <<EOSQL | psql -h${PG_DBSERVER} -d${PG_DBNAME} -U mgd_dbo -e  >> ${LOG_RUNVOCLOAD}
 
+create temp table soTemp as 
 select _Accession_key
-into temp so
 from ACC_Accession
 where _MGIType_key = 13
 and preferred = 0
@@ -128,9 +128,9 @@ and _LogicalDB_key = 146
 and prefixPart = 'SO:'
 ;
 
-update ACC_Accession
-set a._LogicalDB_key = 145, a.preferred = 1, private = 1
-from ACC_Accession a, so s
+update ACC_Accession a
+set _LogicalDB_key = 145, preferred = 1, private = 1
+from soTemp s
 where a._Accession_key = s._Accession_key
 ;
 
