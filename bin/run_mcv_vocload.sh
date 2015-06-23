@@ -117,7 +117,7 @@ checkStatus ${STAT} "${VOCLOAD}/runOBOFullLoad.sh ${CONFIG_VOCLOAD}"
 
 echo "Moving SO ID association to MCV term to SO ldb" | tee -a ${LOG_RUNVOCLOAD}
 
-cat - <<EOSQL | psql -h${PG_DBSERVER} -d${PG_DBNAME} -U mgd_dbo -e  >> ${LOG_RUNVOCLOAD}
+cat - <<EOSQL | psql -h${MGD_DBSERVER} -d${MGD_DBNAME} -U mgd_dbo -e  >> ${LOG_RUNVOCLOAD}
 
 create temp table soTemp as 
 select _Accession_key
