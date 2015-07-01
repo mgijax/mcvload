@@ -273,10 +273,7 @@ MCVLOAD_TEMP_TABLE=${MCVLOAD_TEMP_TABLE}_${USER}
 echo "" >> ${LOG}
 date >> ${LOG}
 echo "Create a temp table for the input data" >> ${LOG}
-cat - <<EOSQL | isql -S${MGD_DBSERVER} -D${MGD_DBNAME} -U${MGI_PUBLICUSER} -P`cat ${MGI_PUBPASSWORDFILE}` -e  >> ${LOG}
-
-use tempdb
-go
+cat - <<EOSQL | psql -h${MGD_DBSERVER} -d${MGD_DBNAME} -U mgd_dbo -e  >> ${LOG}
 
 create table ${MCVLOAD_TEMP_TABLE} (
     termID varchar(30) null,
@@ -285,27 +282,20 @@ create table ${MCVLOAD_TEMP_TABLE} (
     evidCode varchar(30) null,
     editor varchar(30) null
 )
-go
+;
 
-create nonclustered index idx_termID on ${MCVLOAD_TEMP_TABLE} (termID)
-go
+create  index idx_termID on ${MCVLOAD_TEMP_TABLE} (lower(termID)) ;
 
-create nonclustered index idx_mgiID on ${MCVLOAD_TEMP_TABLE} (mgiID)
-go
+create  index idx_mgiID on ${MCVLOAD_TEMP_TABLE} (lower(mgiID)) ;
 
-create nonclustered index idx_jNum on ${MCVLOAD_TEMP_TABLE} (jNum)
-go
+create  index idx_jNum on ${MCVLOAD_TEMP_TABLE} (lower(jNum)) ;
 
-create nonclustered index idx_evidCode on ${MCVLOAD_TEMP_TABLE} (evidCode)
-go
+create  index idx_evidCode on ${MCVLOAD_TEMP_TABLE} (lower(evidCode)) ;
 
-create nonclustered index idx_editor on ${MCVLOAD_TEMP_TABLE} (editor)
-go
+create  index idx_editor on ${MCVLOAD_TEMP_TABLE} (lower(editor)) ;
 
-grant all on ${MCVLOAD_TEMP_TABLE} to public
-go
+grant all on ${MCVLOAD_TEMP_TABLE} to public ;
 
-quit
 EOSQL
 
 #
@@ -341,15 +331,10 @@ fi
 echo "" >> ${LOG}
 date >> ${LOG}
 echo "Drop the temp table" >> ${LOG}
-cat - <<EOSQL | isql -S${MGD_DBSERVER} -D${MGD_DBNAME} -U${MGI_PUBLICUSER} -P`cat ${MGI_PUBPASSWORDFILE}` -e  >> ${LOG}
+cat - <<EOSQL | psql -h${MGD_DBSERVER} -d${MGD_DBNAME} -U mgd_dbo -e  >> ${LOG}
 
-use tempdb
-go
+drop table ${MCVLOAD_TEMP_TABLE};
 
-drop table ${MCVLOAD_TEMP_TABLE}
-go
-
-quit
 EOSQL
 
 date >> ${LOG}

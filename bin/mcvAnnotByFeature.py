@@ -42,8 +42,8 @@ fp = reportlib.init(sys.argv[0], '')
 
 cmds = []
 
-cmds.append('''select t.term as feature, featureCount=0
-	into #notUsed
+cmds.append('''select t.term as feature, 0 as featureCount
+	into temp notUsed
 	from VOC_Term t
 	where t._Vocab_key = 79
 	and not exists (select 1
@@ -52,17 +52,17 @@ cmds.append('''select t.term as feature, featureCount=0
 		and va._Term_key = t._Term_key)''')
 
 cmds.append('''select va.*, t.term as feature
-        into #mcv
-        from VOC_Annot va, VOC_Term t
-        where va._AnnotType_key = 1011
-        and va._Term_key *= t._Term_key''')
+        into temp mcv
+        from VOC_Annot va left outer join
+	VOC_Term t on t._term_key = va._term_key
+        where va._AnnotType_key = 1011''')
 
 cmds.append('''select feature, count(feature) as featureCount
-	from #mcv
+	from mcv
 	group by feature
 	union
 	select feature, featureCount
-	from #notUsed
+	from notUsed
 	order by feature''')
 
 results = db.sql(cmds, 'auto')
