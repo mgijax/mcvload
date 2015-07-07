@@ -91,7 +91,7 @@ then
     touch ${INPUT_FILE_DEFAULT}
     chmod 664 ${INPUT_FILE_DEFAULT}
     chgrp mgi ${INPUT_FILE_DEFAULT}
-if
+fi
 
 chmod -f 775 ${INPUTDIR}
 chgrp mgi ${INPUTDIR}
