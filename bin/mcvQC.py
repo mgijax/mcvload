@@ -21,8 +21,6 @@
 #      The following environment variables are set by the configuration
 #      files that are sourced by the wrapper script:
 #
-#          MGI_PUBLICUSER
-#          MGI_PUBPASSWORDFILE
 #          MCVLOAD_TEMP_TABLE
 #          INPUT_FILE_BCP
 #          INVALID_MARKER_RPT
@@ -120,9 +118,6 @@ USAGE = 'Usage: mcvQC.py  inputFile'
 #
 #  GLOBALS
 #
-user = os.environ['MGI_PUBLICUSER']
-passwordFile = os.environ['MGI_PUBPASSWORDFILE']
-
 liveRun = os.environ['LIVE_RUN']
 
 tempTable = os.environ['MCVLOAD_TEMP_TABLE']
@@ -248,8 +243,6 @@ def init ():
     print 'DB Name:  ' + db.get_sqlDatabase()
     sys.stdout.flush()
 
-    db.set_sqlUser(user)
-    db.set_sqlPasswordFromFile(passwordFile)
     db.useOneConnection(1)
     #db.set_sqlLogFunction(db.sqlLogAll)
     openFiles()
