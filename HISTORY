@@ -1,3 +1,10 @@
+TAG: mcvload-6-0-0-3
+DATE: 8/19/2015
+STAFF: dbm
+CHANGES:
+1) bin/mcvQC.sh: Use .pgpass file in the user's HOME directory if not run
+                 as mgiadmin
+
 TAG: mcvload-6-0-0-2
 TAG: mcvload-6-0-0-1
 DATE: 07/24/2015, 07/27/2015
