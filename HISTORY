@@ -1,3 +1,9 @@
+TAG: mcvload-6-0-0-4
+DATE: 8/25/2015
+STAFF: dbm
+CHANGES:
+1) bin/mcvload.sh: Use "test" instead of "env test"
+
 TAG: mcvload-6-0-0-3
 DATE: 8/19/2015
 STAFF: dbm
