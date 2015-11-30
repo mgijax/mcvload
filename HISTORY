@@ -1,3 +1,9 @@
+TAG: mcvload-6-0-1-1
+DATE: 11/30/2015
+STAFF: dbm
+CHANGES:
+1) mcvload.config.default: Don't override MAIL_LOG_PROC
+
 TAG: mcvload-6-0-0-4
 DATE: 8/25/2015
 STAFF: dbm
