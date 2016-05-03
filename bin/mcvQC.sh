@@ -34,7 +34,7 @@
 # 	6. Qualifier - may be blank
 # 	7. Editor user login
 # 	8. Date (MM/DD/YYYY) - may be blank, if so date of load is used.
-# 	9. Notes - may be blank (max length 255)
+# 	9. Notes - may be blank
 # 	10. Blank (this is used for ldb if different than default 'MGI')
 #
 #       There can be additional fields, but they are not used.
