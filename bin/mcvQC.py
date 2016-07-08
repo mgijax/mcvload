@@ -115,9 +115,27 @@ NL = '\n'
 
 USAGE = 'Usage: mcvQC.py  inputFile'
 
+# for updating marker type
+UPDATE = '''update MRK_Marker
+	    set _Marker_Type_key = %s,
+	    _ModifiedBy_key = %s,
+	    modification_date = now()
+	    where _Marker_key = %s'''
+MARKER_KEY = '''select _Object_key as _Marker_key
+		from ACC_Accession
+		where _MGIType_key = 2
+		and _LogicalDB_key = 1
+		and prefixPart = 'MGI:'
+		and preferred = 1
+		and accID = '%s' '''
 #
 #  GLOBALS
 #
+
+# for updating marker types
+updatedBy = None
+updatedByKey = None
+
 liveRun = os.environ['LIVE_RUN']
 
 tempTable = os.environ['MCVLOAD_TEMP_TABLE']
@@ -183,8 +201,10 @@ termIDToTermDict = {}
 # markers mapped to their SO/MCV IDs
 mgdMgiIdToTermIdDict = {}
 
-# map marker type key to marker type
+# map marker type key to marker type and the reverse
 mkrTypeKeyToMkrTypeDict = {}
+mkrTypeToKeyDict = {}
+
 #
 # map marker type to the MCV Term associated with the marker type
 #  looks like {mType:mcvTerm, ...}
@@ -206,6 +226,10 @@ mkrKeyToMkrTypeKeyDict = {}
 # map marker mgiID to its marker type
 #
 mgiIdToMkrTypeDict = {}
+
+# markers whose type need updating based on the MCV marker type
+# {mgiID: mcv marker type term
+markersToUpdateDict = {}
 
 #
 # Purpose: Validate the arguments to the script.
@@ -237,7 +261,9 @@ def init ():
 
     global mcvTermToParentMkrTypeTermDict
     global mcvKeyToTermDict, mkrTypeToAssocMCVTermDict
-    global mcvTermToMkrTypeDict, mkrKeyToMkrTypeKeyDict
+    global mcvTermToMkrTypeDict, mkrKeyToMkrTypeKeyDict, mkrTypeToKeyDict
+
+    global updatedBy, updatedByKey
 
     print 'DB Server:' + db.get_sqlServer()
     print 'DB Name:  ' + db.get_sqlDatabase()
@@ -247,6 +273,13 @@ def init ():
     #db.set_sqlLogFunction(db.sqlLogAll)
     openFiles()
     loadTempTable()
+
+    # get user key for updates
+    results = db.sql('''select _User_key
+	from MGI_User
+	where login = '%s' ''' % updatedBy)
+
+    updatedByKey = results[0]['_User_key']
 
     #
     # Load global lookup dictionaries
@@ -308,13 +341,13 @@ def init ():
         mgiID = r['mgiID']
         termID = r['termID']
 	if not inputTermIdLookupByMgiId.has_key(mgiID):
-	    inputTermIdLookupByMgiId[mgiID] = [] # default
+	   inputTermIdLookupByMgiId[mgiID] = [] # default
 	if termID != None: # this case when only mgiID in file for delete
 	    inputTermIdLookupByMgiId[mgiID].append(termID)
     #
     # get marker types from the database
     #
-    results = db.sql(''' select a.accId as mgiID, t.name as mkrType
+    results = db.sql(''' select a.accId as mgiID, t.name
                 from MRK_Marker m, ACC_Accession a, MRK_Types t
                 where m._Marker_Status_key = 1
                 and m._Organism_key = 1
@@ -325,12 +358,14 @@ def init ():
 		and a.prefixPart = 'MGI:'
 		and m._Marker_Type_key = t._Marker_Type_key''', 'auto')
     for r in results:
-	mgiIdToMkrTypeDict[r['mgiID']] = r['mkrType']
+	mgiIdToMkrTypeDict[r['mgiID']] = r['name']
 
     results = db.sql(''' select name, _Marker_Type_key
 		from MRK_Types''', 'auto')
     for r in results:
 	mkrTypeKeyToMkrTypeDict[ r['_Marker_Type_key'] ] =  r['name']
+	mkrTypeToKeyDict[r['name']] = r['_Marker_Type_key']
+
     # parse the MCV Note and load lookups
     # we store the association of a marker type to a MCV
     # term in the term Note. Only MCV terms which correspond to
@@ -557,7 +592,7 @@ def closeFiles ():
 # Throws: Nothing
 #
 def loadTempTable ():
-    global annot
+    global annot, updatedBy
 
     print 'Create a bcp file from the input file'
     sys.stdout.flush()
@@ -567,6 +602,7 @@ def loadTempTable ():
     # write them to a bcp file.
     #
     line = fpInput.readline()
+    updatedBy = re.split(TAB, line[:-1])[6]
     count = 1
     while line:
         tokens = re.split(TAB, line[:-1])
@@ -738,10 +774,10 @@ def createMarkerTypeConflictReport():
     global nonfatalCount, nonfatalReportNames
     print 'Create the Markers with conflict between Marker Type and MCV Marker Type Report'
     sys.stdout.flush()
-    fpConflictRpt.write(string.center('Markers  with conflict between Marker Type and the MCV Marker Type',136) + NL)
+    fpConflictRpt.write(string.center('Markers whose Marker Type has been updated to match MCV Marker Type',136) + NL)
     fpConflictRpt.write(string.center('(' + timestamp + ')',136) + 2*NL)
     fpConflictRpt.write('%-16s  %-20s  %-30s  %-30s  %-30s%s' %
-                     ('MGI ID','Marker Type','MCV Term',
+                     ('MGI ID','Old Marker Type','MCV Term',
                       'MCV Marker Type Term','Web Display MCV Term',NL))
     fpConflictRpt.write(16*'-' + '  ' + 20*'-' + '  ' + \
                       30*'-' + '  ' + 30*'-' + '  ' + 30*'-' + NL)
@@ -780,7 +816,10 @@ def createMarkerTypeConflictReport():
 	if not mcvTermToMkrTypeDict.has_key(mcvMkrTypeTerm):
 	    continue
 	mcvMkrType = mcvTermToMkrTypeDict[mcvMkrTypeTerm]
+	print 'mkrType: %s mcvMkrType: %s' % (mkrType, mcvMkrType)
 	if mkrType != mcvMkrType:
+	    # save for later marker type update
+	    markersToUpdateDict[mgiID] = mcvMkrType
 	    conflictCt += 1
 
 	    loadAssignedTerm = mkrTypeToAssocMCVTermDict[mkrType]
@@ -793,6 +832,10 @@ def createMarkerTypeConflictReport():
     if conflictCt > 0 and not conflictRptFile in nonfatalReportNames:
 	nonfatalReportNames.append(conflictRptFile + NL)
     nonfatalCount += conflictCt
+    # DEBUG
+    for m in markersToUpdateDict:
+	mcvMkrTypeTerm = markersToUpdateDict[m]
+	print 'Updating %s to marker type %s' % (m, mcvMkrTypeTerm)
 
 # Purpose: Create the invalid marker report.
 # Returns: Nothing
@@ -1318,8 +1361,29 @@ def createAnnotFile ():
 	    fpAnnot.write(line)
     fpAnnot.close()
 
-
 #
+# Purpose: Update markers the the MCV marker type
+# Returns: Nothing
+# Assumes: Nothing
+# Effects: Nothing
+# Throws: Nothing
+#
+def updateMarkerType ():
+    print 'in updateMarkerType'
+    for mgiID in markersToUpdateDict:
+	typeTerm = markersToUpdateDict[mgiID]
+	mrkTypeKey = mkrTypeToKeyDict[typeTerm]
+	print '%s %s' % (typeTerm, mrkTypeKey)
+	results = db.sql(MARKER_KEY % mgiID, 'auto')
+	if len(results) != 1:
+	    print results
+	else:
+	    mrkKey = results[0]['_Marker_key']
+	    db.sql(UPDATE % (mrkTypeKey, updatedByKey, mrkKey), None)
+	    print UPDATE % (mrkTypeKey, updatedByKey, mrkKey)
+    db.commit()
+
+#	
 # Main
 #
 checkArgs()
@@ -1344,6 +1408,7 @@ closeFiles()
 
 if liveRun == "1":
     createAnnotFile()
+    updateMarkerType()
 
 # write  non fatal report names to stdout
 names = string.join(nonfatalReportNames,'' )
