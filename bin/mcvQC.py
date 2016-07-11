@@ -798,7 +798,7 @@ def createMarkerTypeConflictReport():
 	# get marker type
         mgiID = r['mgiID']
 	if not mgiIdToMkrTypeDict.has_key(mgiID):
-	    #print 'MGI ID: %s not primary or not valid' % mgiID
+	    print 'MGI ID: %s not primary or not valid' % mgiID
 	    continue
 	mkrType = mgiIdToMkrTypeDict[mgiID]
 	# get term
@@ -816,7 +816,6 @@ def createMarkerTypeConflictReport():
 	if not mcvTermToMkrTypeDict.has_key(mcvMkrTypeTerm):
 	    continue
 	mcvMkrType = mcvTermToMkrTypeDict[mcvMkrTypeTerm]
-	print 'mkrType: %s mcvMkrType: %s' % (mkrType, mcvMkrType)
 	if mkrType != mcvMkrType:
 	    # save for later marker type update
 	    markersToUpdateDict[mgiID] = mcvMkrType
@@ -832,10 +831,6 @@ def createMarkerTypeConflictReport():
     if conflictCt > 0 and not conflictRptFile in nonfatalReportNames:
 	nonfatalReportNames.append(conflictRptFile + NL)
     nonfatalCount += conflictCt
-    # DEBUG
-    for m in markersToUpdateDict:
-	mcvMkrTypeTerm = markersToUpdateDict[m]
-	print 'Updating %s to marker type %s' % (m, mcvMkrTypeTerm)
 
 # Purpose: Create the invalid marker report.
 # Returns: Nothing
@@ -1286,7 +1281,6 @@ def createMultipleMCVReport():
 		(mgiID, symbol, termID, term, NL))    
     fpMultiMCVRpt.write(NL + 'Number of Markers with Multiple MCV Annotations: ' + str(multiCt) + NL)
     if multiCt > 0 and not multiMcvRptFile in nonfatalReportNames:
-	#print 'writing multiMcvRptFile to nonfatalReportNames'
 	nonfatalReportNames.append(multiMcvRptFile + NL)
     nonfatalCount += multiCt
 
@@ -1369,18 +1363,12 @@ def createAnnotFile ():
 # Throws: Nothing
 #
 def updateMarkerType ():
-    print 'in updateMarkerType'
     for mgiID in markersToUpdateDict:
 	typeTerm = markersToUpdateDict[mgiID]
 	mrkTypeKey = mkrTypeToKeyDict[typeTerm]
-	print '%s %s' % (typeTerm, mrkTypeKey)
 	results = db.sql(MARKER_KEY % mgiID, 'auto')
-	if len(results) != 1:
-	    print results
-	else:
-	    mrkKey = results[0]['_Marker_key']
-	    db.sql(UPDATE % (mrkTypeKey, updatedByKey, mrkKey), None)
-	    print UPDATE % (mrkTypeKey, updatedByKey, mrkKey)
+	mrkKey = results[0]['_Marker_key']
+	db.sql(UPDATE % (mrkTypeKey, updatedByKey, mrkKey), None)
     db.commit()
 
 #	
