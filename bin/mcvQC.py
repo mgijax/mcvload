@@ -902,7 +902,7 @@ def createInvMarkerReport ():
                       'a._MGIType_key = 2 and ' + \
                       'a._MGIType_key = t._MGIType_key and ' + \
                       'a._Object_key = m._Marker_key and ' + \
-                      'm._Marker_Status_key not in (1,3) and ' + \
+                      'm._Marker_Status_key = 2 and ' + \
                       'm._Marker_Status_key = ms._Marker_Status_key ' + \
                 'order by mgiID, termID')
 
