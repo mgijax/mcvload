@@ -286,11 +286,11 @@ echo "Create a temp table for the input data" >> ${LOG}
 cat - <<EOSQL | psql -h${MGD_DBSERVER} -d${MGD_DBNAME} -U mgd_dbo -e  >> ${LOG}
 
 create table ${MCVLOAD_TEMP_TABLE} (
-    termID varchar(30) null,
-    mgiID varchar(30) not null,
-    jNum varchar(30) null,
-    evidCode varchar(30) null,
-    editor varchar(30) null
+    termID text null,
+    mgiID text not null,
+    jNum text null,
+    evidCode text null,
+    editor text null
 )
 ;
 

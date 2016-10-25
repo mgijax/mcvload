@@ -1,3 +1,9 @@
+TAG: mcvload-6-0-6-1
+DATE: 10/25/2016
+STAFF: lec 
+CHANGES:
+bin/run_mcv_vocload.sh : fixed documentation
+
 TAG: mcvload-6-0-5-1
 DATE: 09/01/2016
 STAFF: lec 
