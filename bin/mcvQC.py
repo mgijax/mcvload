@@ -107,6 +107,9 @@ import re
 import mgi_utils
 import db
 
+db.setAutoTranslate(False)
+db.setAutoTranslateBE(False)
+
 #
 #  CONSTANTS
 #
@@ -118,16 +121,19 @@ USAGE = 'Usage: mcvQC.py  inputFile'
 # for updating marker type
 UPDATE = '''update MRK_Marker
 	    set _Marker_Type_key = %s,
-	    _ModifiedBy_key = %s,
-	    modification_date = now()
-	    where _Marker_key = %s'''
+	    	_ModifiedBy_key = %s,
+	    	modification_date = now()
+	    where _Marker_key = %s
+	    '''
+
 MARKER_KEY = '''select _Object_key as _Marker_key
 		from ACC_Accession
 		where _MGIType_key = 2
 		and _LogicalDB_key = 1
 		and prefixPart = 'MGI:'
 		and preferred = 1
-		and accID = '%s' '''
+		and accID = '%s' 
+		'''
 #
 #  GLOBALS
 #
@@ -275,10 +281,7 @@ def init ():
     loadTempTable()
 
     # get user key for updates
-    results = db.sql('''select _User_key
-	from MGI_User
-	where login = '%s' ''' % updatedBy)
-
+    results = db.sql('''select _User_key from MGI_User where login = '%s' ''' % updatedBy)
     updatedByKey = results[0]['_User_key']
 
     #
@@ -331,8 +334,7 @@ def init ():
     # get all SO/MCV annotations to markers from temp table
     # loaded from the input file
     #
-    results = db.sql('select tmp.termID, tmp.mgiID ' + \
-                'from ' + tempTable + ' tmp ', 'auto')
+    results = db.sql('select tmp.termID, tmp.mgiID from %s tmp ' % (tempTable), 'auto')
                 #'where tmp.mgiID is not null ' + \
                 #'and tmp.termID is not null', 'auto')
 
@@ -347,7 +349,7 @@ def init ():
     #
     # get marker types from the database
     #
-    results = db.sql(''' select a.accId as mgiID, t.name
+    results = db.sql('''select a.accId as mgiID, t.name
                 from MRK_Marker m, ACC_Accession a, MRK_Types t
                 where m._Marker_Status_key = 1
                 and m._Organism_key = 1
@@ -360,7 +362,7 @@ def init ():
     for r in results:
 	mgiIdToMkrTypeDict[r['mgiID']] = r['name']
 
-    results = db.sql(''' select name, _Marker_Type_key
+    results = db.sql('''select name, _Marker_Type_key
 		from MRK_Types''', 'auto')
     for r in results:
 	mkrTypeKeyToMkrTypeDict[ r['_Marker_Type_key'] ] =  r['name']
@@ -380,20 +382,23 @@ def init ():
     # Notes tell us the term's MGI marker type if term maps directly to a
     # marker type
     cmds = []
-    cmds.append('select n._Object_key, rtrim(nc.note) as chunk, ' + \
-	'nc.sequenceNum ' + \
-        'into temp notes ' + \
-        'from MGI_Note n, MGI_NoteChunk nc ' + \
-        'where n._MGIType_key = 13 ' + \
-            'and n._NoteType_key = 1001 ' + \
-            'and n._Note_key = nc._Note_key')
+    cmds.append('''
+    	select n._Object_key, rtrim(nc.note) as chunk, nc.sequenceNum 
+        into temp notes 
+        from MGI_Note n, MGI_NoteChunk nc 
+        where n._MGIType_key = 13 
+            and n._NoteType_key = 1001 
+            and n._Note_key = nc._Note_key
+	    ''')
     cmds.append('create index notes_idx1 on notes(_Object_key)')
-    cmds.append('select t._Term_key, t.term, n.chunk ' + \
-            'from VOC_Term t left outer join notes n on ' + \
-		'n._object_key = t._term_key ' + \
-            'where t._Vocab_key = 79 ' + \
-            'and t._Term_key = n._Object_key ' + \
-            'order by t._Term_key, n.sequenceNum')
+    cmds.append('''
+    	select t._Term_key, t.term, n.chunk
+        from VOC_Term t 
+		left outer join notes n on n._object_key = t._term_key
+        		where t._Vocab_key = 79 
+        		and t._Term_key = n._Object_key 
+        order by t._Term_key, n.sequenceNum
+	''')
     results = db.sql(cmds, 'auto')
     notes = {} # map the terms to their note chunks
     for r in results[2]:
@@ -429,19 +434,22 @@ def init ():
     # which is a marker type parent
     #
     cmds = []
-    cmds.append('select _AncestorObject_key, _DescendentObject_key ' + \
-	    'into temp clos ' + \
-            'from DAG_Closure ' + \
-            'where _DAG_key = 9 ' + \
-            'and _MGIType_key = 13')
+    cmds.append('''
+    	select _AncestorObject_key, _DescendentObject_key 
+	into temp clos 
+        from DAG_Closure 
+        where _DAG_key = 9 
+        and _MGIType_key = 13
+	''')
     cmds.append('create index clos_idx1 on clos(_AncestorObject_key)')
     cmds.append('create index clos_idx2 on clos(_DescendentObject_key)')
-    cmds.append('select t1.term as ancestorTerm, ' + \
-		't2.term as descendentTerm ' + \
-		'from clos c, VOC_Term t1, VOC_Term t2 ' + \
-		'where c._AncestorObject_key = t1._Term_key ' + \
-		'and c._DescendentObject_key = t2._Term_key ' + \
-                'order by t2.term')
+    cmds.append('''
+    	select t1.term as ancestorTerm, t2.term as descendentTerm 
+	from clos c, VOC_Term t1, VOC_Term t2 
+	where c._AncestorObject_key = t1._Term_key 
+	and c._DescendentObject_key = t2._Term_key 
+        order by t2.term
+	''')
     results = db.sql(cmds, 'auto')
     # the mcv terms that represent marker types
     mcvMarkerTypeValues  = mkrTypeToAssocMCVTermDict.values()
@@ -460,10 +468,11 @@ def init ():
             mcvTermToParentMkrTypeTermDict[dTerm] = aTerm
 
     # map marker keys to their marker type
-    cmd = ''' select _Marker_Type_key, _Marker_key
-                from MRK_Marker
-                where _Marker_Status_key = 1'''
-
+    cmd = '''
+    	select _Marker_Type_key, _Marker_key
+        from MRK_Marker
+        where _Marker_Status_key = 1
+	'''
     results = db.sql(cmd, 'auto')
     for r in results:
         mkrTypeKey = r['_Marker_Type_key']
@@ -786,11 +795,12 @@ def createMarkerTypeConflictReport():
     #
     # Get the MGI ID and Term IDs from the temp table
     #
-    cmds.append('select tmp.termID, ' + \
-                       'tmp.mgiID ' + \
-                 'from ' + tempTable + ' tmp ' + \
-                 'where tmp.mgiID is not null ' + \
-                 'order by lower(tmp.mgiID)')
+    cmds.append('''
+    	select tmp.termID, tmp.mgiID 
+        from %s tmp
+        where tmp.mgiID is not null
+        order by lower(tmp.mgiID)
+	''' % (tempTable))
 
     results = db.sql(cmds,'auto')
     conflictCt = 0
@@ -859,52 +869,54 @@ def createInvMarkerReport ():
     # 2) Exist for a non-marker object.
     # 3) Exist for a marker, but the status is not "official" or "interim".
     #
-    cmds.append('select tmp.termID, ' + \
-                       'tmp.mgiID, ' + \
-                       'null as name, ' + \
-                       'null as status ' + \
-                'from ' + tempTable + ' tmp ' + \
-                'where tmp.mgiID is not null and ' + \
-                      'not exists (select 1 ' + \
-                                  'from ACC_Accession a ' + \
-                                  'where lower(a.accID) = lower(tmp.mgiID)) ' + \
-                'union ' + \
-                'select tmp.termID, ' + \
-                       'tmp.mgiID, ' + \
-                       't.name, ' + \
-                       'null as status ' + \
-                'from ' + tempTable + ' tmp, ' + \
-                     'ACC_Accession a1, ' + \
-                     'ACC_MGIType t ' + \
-                'where tmp.mgiID is not null and ' + \
-                      'lower(a1.accID) = lower(tmp.mgiID) and ' + \
-                      'a1._LogicalDB_key = 1 and ' + \
-                      'a1._MGIType_key != 2 and ' + \
-                      'not exists (select 1 ' + \
-                                  'from ACC_Accession a2 ' + \
-                                  'where lower(a2.accID) = lower(tmp.mgiID) and ' + \
-                                        'a2._LogicalDB_key = 1 and ' + \
-                                        'a2._MGIType_key = 2) and ' + \
-                      'a1._MGIType_key = t._MGIType_key ' + \
-                'union ' + \
-                'select tmp.termID, ' + \
-                       'tmp.mgiID, ' + \
-                       't.name, ' + \
-                       'ms.status ' + \
-                'from ' + tempTable + ' tmp, ' + \
-                     'ACC_Accession a, ' + \
-                     'ACC_MGIType t, ' + \
-                     'MRK_Marker m, ' + \
-                     'MRK_Status ms ' + \
-                'where tmp.mgiID is not null and ' + \
-                      'lower(a.accID) = lower(tmp.mgiID) and ' + \
-                      'a._LogicalDB_key = 1 and ' + \
-                      'a._MGIType_key = 2 and ' + \
-                      'a._MGIType_key = t._MGIType_key and ' + \
-                      'a._Object_key = m._Marker_key and ' + \
-                      'm._Marker_Status_key != 1 and ' + \
-                      'm._Marker_Status_key = ms._Marker_Status_key ' + \
-                'order by mgiID, termID')
+    cmds.append('''
+    	select tmp.termID, 
+        	tmp.mgiID, 
+        	null as name, 
+        	null as status 
+        from %s tmp
+        where tmp.mgiID is not null and
+            not exists (select 1
+                         from ACC_Accession a 
+                         where lower(a.accID) = lower(tmp.mgiID))
+         union
+         select tmp.termID, 
+                       tmp.mgiID, 
+                       t.name, 
+                       null as status 
+         from %s tmp, 
+                     ACC_Accession a1, 
+                     ACC_MGIType t 
+         where tmp.mgiID is not null and 
+                      lower(a1.accID) = lower(tmp.mgiID) and 
+                      a1._LogicalDB_key = 1 and 
+                      a1._MGIType_key != 2 and 
+                      not exists (select 1 
+                                  from ACC_Accession a2 
+                                  where lower(a2.accID) = lower(tmp.mgiID) and 
+                                        a2._LogicalDB_key = 1 and 
+                                        a2._MGIType_key = 2) and 
+                      a1._MGIType_key = t._MGIType_key 
+         union 
+         select tmp.termID, 
+                       tmp.mgiID, 
+                       t.name, 
+                       ms.status 
+         from %s tmp, 
+                     ACC_Accession a, 
+                     ACC_MGIType t, 
+                     MRK_Marker m, 
+                     MRK_Status ms 
+         where tmp.mgiID is not null and 
+                      lower(a.accID) = lower(tmp.mgiID) and 
+                      a._LogicalDB_key = 1 and 
+                      a._MGIType_key = 2 and 
+                      a._MGIType_key = t._MGIType_key and 
+                      a._Object_key = m._Marker_key and 
+                      m._Marker_Status_key != 1 and 
+                      m._Marker_Status_key = ms._Marker_Status_key 
+         order by mgiID, termID
+	 ''' % (tempTable, tempTable, tempTable))
 
     results = db.sql(cmds,'auto')
 
@@ -966,25 +978,27 @@ def createSecMarkerReport ():
     # Find any MGI IDs from the input data that are secondary IDs
     # for a marker.
     #
-    cmds.append('select tmp.termID, ' + \
-                       'tmp.mgiID, ' + \
-                       'm.symbol, ' + \
-                       'a2.accID ' + \
-                'from ' + tempTable + ' tmp, ' + \
-                     'ACC_Accession a1, ' + \
-                     'ACC_Accession a2, ' + \
-                     'MRK_Marker m ' + \
-                'where tmp.mgiID is not null and ' + \
-                      'lower(tmp.mgiID) = lower(a1.accID) and ' + \
-                      'a1._MGIType_key = 2 and ' + \
-                      'a1._LogicalDB_key = 1 and ' + \
-                      'a1.preferred = 0 and ' + \
-                      'a1._Object_key = a2._Object_key and ' + \
-                      'a2._MGIType_key = 2 and ' + \
-                      'a2._LogicalDB_key = 1 and ' + \
-                      'a2.preferred = 1 and ' + \
-                      'a2._Object_key = m._Marker_key ' + \
-                'order by lower(tmp.mgiID), lower(tmp.termID)')
+    cmds.append('''
+    	select tmp.termID, 
+               tmp.mgiID, 
+               m.symbol, 
+               a2.accID 
+        from %s tmp, 
+                     ACC_Accession a1, 
+                     ACC_Accession a2, 
+                     MRK_Marker m 
+        where tmp.mgiID is not null and 
+                      lower(tmp.mgiID) = lower(a1.accID) and 
+                      a1._MGIType_key = 2 and 
+                      a1._LogicalDB_key = 1 and 
+                      a1.preferred = 0 and 
+                      a1._Object_key = a2._Object_key and 
+                      a2._MGIType_key = 2 and 
+                      a2._LogicalDB_key = 1 and 
+                      a2.preferred = 1 and 
+                      a2._Object_key = m._Marker_key 
+        order by lower(tmp.mgiID), lower(tmp.termID)
+	''' % (tempTable))
 
     results = db.sql(cmds,'auto')
 
@@ -1026,15 +1040,17 @@ def createInvTermIdReport ():
     #
     # Find any term IDs from the input data that are not in the database.
     #
-    cmds.append('select tmp.termID ' + \
-                'from ' + tempTable + ' tmp ' + \
-                'where tmp.termID is not null and ' + \
-                      'not exists (select 1 ' + \
-                                  'from ACC_Accession a ' + \
-                                  'where lower(a.accID) = lower(tmp.termID) and ' + \
-                                        'a._MGIType_key = 13 and ' + \
-					'a._LogicalDB_key in (145,146)) ' + \
-                'order by lower(tmp.termID)')
+    cmds.append('''
+    	select tmp.termID
+        from %s tmp 
+        where tmp.termID is not null and 
+                      not exists (select 1 
+                                  from ACC_Accession a 
+                                  where lower(a.accID) = lower(tmp.termID) and 
+                                        a._MGIType_key = 13 and 
+					a._LogicalDB_key in (145,146)) 
+        order by lower(tmp.termID)
+	''' % (tempTable))
 
     results = db.sql(cmds,'auto')
 
@@ -1072,17 +1088,19 @@ def createGroupingTermIdReport ():
     fpGroupingTermRpt.write(20*'-' + ' ' + 20*'-' + NL)
     quotedTerms=''
     for t in string.split(groupingTermIds, ','):
-	quotedTerms = '%s"%s",' % (quotedTerms, t)
+	quotedTerms = "%s'%s'," % (quotedTerms, t)
     quotedTerms = quotedTerms[:-1]
     cmds = []
     #
     # Find any annotations to grouping IDs
     #
-    cmds.append('select tmp.mgiID, tmp.termID ' + \
-                'from ' + tempTable + ' tmp ' + \
-                'where tmp.termID is not null ' + \
-	        'and lower(tmp.termID) in (%s) ' % quotedTerms.lower() + \
-                'order by lower(tmp.termID)')
+    cmds.append('''
+    	select tmp.mgiID, tmp.termID 
+        from %s tmp 
+        where tmp.termID is not null 
+	and lower(tmp.termID) in (%s)
+        order by lower(tmp.termID)
+	''' % (tempTable, quotedTerms.lower()))
     results = db.sql(cmds,'auto')
 
     #
@@ -1121,17 +1139,18 @@ def createInvJNumReport ():
     #
     # Find any J Numbers from the input data that are not in the database.
     #
-    cmds.append('select tmp.jNum ' + \
-		'from ' + tempTable + ' tmp ' + \
-		'where tmp.jNum is not null and ' + \
-		    'not exists (select 1 ' + \
-		    'from ACC_Accession a ' + \
-			  'where lower(a.accID) = lower(tmp.jNum) and ' + \
-				'a._MGIType_key = 1 and ' + \
-				'a._LogicalDB_key = 1 and ' + \
-				'a.prefixPart = \'J:\' and ' + \
-				'a.preferred = 1) ' + \
-				'order by lower(tmp.jNum)')
+    cmds.append('''
+    	select tmp.jNum 
+	from %s tmp 
+	where tmp.jNum is not null and
+	    not exists (select 1 from ACC_Accession a 
+		  where lower(a.accID) = lower(tmp.jNum) and 
+			a._MGIType_key = 1 and 
+			a._LogicalDB_key = 1 and 
+			a.prefixPart = 'J:' and 
+			a.preferred = 1) 
+	order by lower(tmp.jNum)
+	''' % (tempTable))
     results = db.sql(cmds,'auto')
 
     #
@@ -1169,13 +1188,14 @@ def createInvEvidReport ():
     #
     # Find any Evidence Codes from the input data that are not in the database.
     #
-    cmds.append('select tmp.evidCode ' + \
-                'from ' + tempTable + ' tmp ' + \
-                'where tmp.evidCode is not null and ' + \
-                    'not exists (select 1 ' + \
-                    'from VOC_Term t ' + \
-                          'where t._Vocab_key = 80 and ' + \
-                                'lower(tmp.evidCode) = lower(t.term))')
+    cmds.append('''
+    	select tmp.evidCode 
+        from %s tmp 
+        where tmp.evidCode is not null and 
+            not exists (select 1 from VOC_Term t 
+            	where t._Vocab_key = 80 and 
+            	lower(tmp.evidCode) = lower(t.term))
+	''' % (tempTable))
     results = db.sql(cmds,'auto')
 
     #
@@ -1213,12 +1233,13 @@ def createInvEditorReport ():
     #
     # Find any Editor logins from the input data that are not in the database.
     #
-    cmds.append('select tmp.editor ' + \
-                'from ' + tempTable + ' tmp ' + \
-                'where tmp.editor is not null and ' + \
-                    'not exists (select 1 ' + \
-                    'from MGI_User u ' + \
-                          'where lower(u.login) = lower(tmp.editor))')
+    cmds.append('''
+    	select tmp.editor 
+        from %s tmp
+        where tmp.editor is not null and 
+        not exists (select 1 from MGI_User u 
+        	where lower(u.login) = lower(tmp.editor))
+	''' % (tempTable))
     results = db.sql(cmds,'auto')
 
     #

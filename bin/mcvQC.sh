@@ -283,7 +283,7 @@ MCVLOAD_TEMP_TABLE=${MCVLOAD_TEMP_TABLE}_${USER}
 echo "" >> ${LOG}
 date >> ${LOG}
 echo "Create a temp table for the input data" >> ${LOG}
-cat - <<EOSQL | psql -h${MGD_DBSERVER} -d${MGD_DBNAME} -U mgd_dbo -e  >> ${LOG}
+cat - <<EOSQL | psql -h${PG_DBSERVER} -d${PG_DBNAME} -U${PG_DBUSER} -e  >> ${LOG}
 
 create table ${MCVLOAD_TEMP_TABLE} (
     termID text null,
@@ -341,7 +341,7 @@ fi
 echo "" >> ${LOG}
 date >> ${LOG}
 echo "Drop the temp table" >> ${LOG}
-cat - <<EOSQL | psql -h${MGD_DBSERVER} -d${MGD_DBNAME} -U mgd_dbo -e  >> ${LOG}
+cat - <<EOSQL | psql -h${PG_DBSERVER} -d${PG_DBNAME} -U${PG_DBUSER} -e  >> ${LOG}
 
 drop table ${MCVLOAD_TEMP_TABLE};
 

@@ -20,6 +20,9 @@ import sys
 import db
 import reportlib
 
+db.setAutoTranslate(False)
+db.setAutoTranslateBE(False)
+
 CRT = reportlib.CRT
 SPACE = reportlib.SPACE
 TAB = reportlib.TAB

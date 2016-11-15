@@ -11,6 +11,15 @@
 #
 ###########################################################################
 
+
+if [ -z ${MGICONFIG} ]
+then
+        MGICONFIG=/usr/local/mgi/live/mgiconfig
+        export MGICONFIG
+fi
+
+. ${MGICONFIG}/master.config.sh
+
 usage ()
 {
     echo "Usage: publishMCV input_file"
@@ -21,14 +30,13 @@ usage ()
 
 CURRENT_DIR=`pwd`
 
-MCVLOADDIR=/usr/local/mgi/live/dataload/mcvload
-CONFIG=${MCVLOADDIR}/mcvload.config
+CONFIG=${MCVLOAD}/mcvload.config
 
 #
 # The mcvload product is not installed on all servers, so make sure
 # it exists on this one.
 #
-if [ ! -d ${MCVLOADDIR} ]
+if [ ! -d ${MCVLOAD} ]
 then
     echo "The mcv load software does not exist on this server"
     exit 1

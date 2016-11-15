@@ -1,3 +1,15 @@
+TAG: mcvload-6-0-6-3
+DATE: 11/15/2016
+STAFF: lec 
+CHANGES:
+TR12069/after Postgres cleanup
+#       modified:   geneNoMcvAnnot.py
+#       modified:   mcvAnnotByFeature.py
+#       modified:   mcvQC.py
+#       modified:   mcvQC.sh
+#       modified:   publishMcv
+#       modified:   runMcvQC
+
 TAG: mcvload-6-0-6-2
 DATE: 11/08/2016
 STAFF: lec 
