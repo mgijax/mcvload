@@ -97,7 +97,7 @@ fi
 . ${CONFIG_VOCLOAD}
 
 LOG_RUNVOCLOAD=${LOGDIR}/runvocload.log
-rm -rf LOG_RUNVOCLOAD
+rm -rf ${LOG_RUNVOCLOAD}
 
 #####################################
 #
@@ -113,7 +113,7 @@ CONFIG_VOCLOAD=${VOCLOAD}/MCV.config
 
 ${VOCLOAD}/runOBOIncLoad.sh ${CONFIG_VOCLOAD} >> ${LOG_RUNVOCLOAD}
 STAT=$?
-checkStatus ${STAT} "${VOCLOAD}/runrunOBOIncLoad.sh ${CONFIG_VOCLOAD}"
+checkStatus ${STAT} "${VOCLOAD}/runOBOIncLoad.sh ${CONFIG_VOCLOAD}"
 
 echo "Moving SO ID association to MCV term to SO ldb" | tee -a ${LOG_RUNVOCLOAD}
 
