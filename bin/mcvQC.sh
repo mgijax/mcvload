@@ -235,7 +235,7 @@ checkColumns ()
     FILE=$1         # The input file to check
     REPORT=$2       # The sanity report to write to
     NUM_COLUMNS=$3  # The number of columns expected in each input record
-    ${MCVLOAD}/bin/checkColumns.py ${FILE} ${NUM_COLUMNS} >> ${REPORT}
+    ${PYTHON} ${MCVLOAD}/bin/checkColumns.py ${FILE} ${NUM_COLUMNS} >> ${REPORT}
 }
 
 
@@ -316,7 +316,7 @@ date >> ${LOG}
 echo "" | tee -a ${LOG}
 echo "Generate the QC reports" | tee -a ${LOG}
 echo "" | tee -a ${LOG}
-{ ${MCVLOAD_QC} ${INPUT_FILE_QC} 2>&1; echo $? > ${TMP_FILE}; } >> ${LOG}
+{ ${PYTHON} ${MCVLOAD_QC} ${INPUT_FILE_QC} 2>&1; echo $? > ${TMP_FILE}; } >> ${LOG}
 if [ `cat ${TMP_FILE}` -eq 1 ]
 then
     echo "A fatal error occurred while generating the QC reports"

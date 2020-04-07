@@ -87,7 +87,7 @@ LOG=${ADD_COLUMNS_LOGFILE}
 rm -rf ${LOG}
 touch ${LOG}
 
-${MCVLOAD}/bin/addColumns.py ${INPUT_FILE} | tee -a ${ADD_COLUMNS_LOGFILE}
+${PYTHON} ${MCVLOAD}/bin/addColumns.py ${INPUT_FILE} | tee -a ${ADD_COLUMNS_LOGFILE}
 if [ $? -ne 0 ]
 then
     echo 'addColumns.sh failed' | tee -a ${ADD_COLUMNS_LOGFILE}
