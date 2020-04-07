@@ -1,4 +1,3 @@
-#!/usr/local/bin/python
 #
 #  checkColumns.py
 ###########################################################################
@@ -58,7 +57,7 @@ def checkArgs ():
     global inputFile, numColumns
 
     if len(sys.argv) != 3:
-        print USAGE
+        print(USAGE)
         sys.exit(1)
 
     inputFile = sys.argv[1]
@@ -77,10 +76,10 @@ def openFile ():
     global fpInput
 
     try:
-	fpInput = open(inputFile, 'r')
+        fpInput = open(inputFile, 'r')
     except:
-	print 'Cannot open input file: ' + inputFile
-	sys.exit(1)
+        print('Cannot open input file: ' + inputFile)
+        sys.exit(1)
     return
 
 #
@@ -93,20 +92,20 @@ def openFile ():
 def checkColumns ():
     global errors
     lineNum = 0
-    print "\n\nLines With Missing Columns"
-    print "--------------------------"
+    print("\n\nLines With Missing Columns")
+    print("--------------------------")
     for line in fpInput.readlines():
-	lineNum = lineNum + 1
-	columns = string.split(line, TAB)
-	nc = len(columns) 
-	#print 'lineNum %s' % lineNum
-	#print 'colNum: %s' % nc
-	#print 'columns: %s' % columns
-	#print 'typeNC: %s configColumns: %s' % (type(nc), type(numColumns))
-	#print 'nc  %s < numColumns %s = %s ' % (nc, numColumns, nc < numColumns)
-	if nc < numColumns:
-	    print 'lineNum: %s, columns: %s numColumns: %s' % (lineNum, columns, nc)
-	    errors = errors + 1
+        lineNum = lineNum + 1
+        columns = str.split(line, TAB)
+        nc = len(columns) 
+        #print 'lineNum %s' % lineNum
+        #print 'colNum: %s' % nc
+        #print 'columns: %s' % columns
+        #print 'typeNC: %s configColumns: %s' % (type(nc), type(numColumns))
+        #print 'nc  %s < numColumns %s = %s ' % (nc, numColumns, nc < numColumns)
+        if nc < numColumns:
+            print('lineNum: %s, columns: %s numColumns: %s' % (lineNum, columns, nc))
+            errors = errors + 1
     return
 
 #

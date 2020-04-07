@@ -1,4 +1,3 @@
-#!/usr/local/bin/python
 #
 #  addColumns.py
 ###########################################################################
@@ -51,7 +50,7 @@ hasMissingColumns = 0
 def checkArgs ():
     global inputFile
     if len(sys.argv) != 2:
-        print USAGE
+        print(USAGE)
         sys.exit(1)
 
     inputFile = sys.argv[1]
@@ -69,7 +68,7 @@ def openFile ():
     try:
         fpInput = open(inputFile, 'r')
     except:
-        print 'Cannot open input file: ' + inputFile
+        print('Cannot open input file: ' + inputFile)
         sys.exit(1)
     return
 
@@ -86,17 +85,17 @@ def addColumns ():
     header = fpInput.readline()
     lineList.append(header)
     for line in fpInput.readlines():
-        tokens = string.split(line[:-1], '\t')
+        tokens = str.split(line[:-1], '\t')
         numCols = len(tokens)
         # if < 8 curator will have to fix, if > 10 ok
-	# if missing 9 or 10 just add it
+        # if missing 9 or 10 just add it
         if numCols == 9:
             line  = '%s%s%s' % (line[:-1], TAB, CRT)
-	    hasMissingColumns = 1
+            hasMissingColumns = 1
         elif numCols == 8:
             line = '%s%s%s%s' % (line[:-1], TAB, TAB, CRT)
-	    hasMissingColumns = 1
-	lineList.append(line)
+            hasMissingColumns = 1
+        lineList.append(line)
 
 #
 # Purpose: write new file with added columns
@@ -110,7 +109,7 @@ def writeFile():
     outputFile = '%s.%s' % (inputFile, os.environ['ADD_COLUMNS_EXT'])
     fpOutput = open(outputFile, 'w')
     for line in lineList:
-	fpOutput.write(line)
+        fpOutput.write(line)
 
 #
 # Main
@@ -121,7 +120,7 @@ addColumns()
 if hasMissingColumns == 1:
     writeFile()
     fpOutput.close()
-    print '\nInput file has missing 9th and/or 10th columns. New file: %s' % outputFile
+    print('\nInput file has missing 9th and/or 10th columns. New file: %s' % outputFile)
 else:
-    print '\nInput file does not have missing 9th or 10th columns'
+    print('\nInput file does not have missing 9th or 10th columns')
 fpInput.close()

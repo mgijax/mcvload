@@ -1,4 +1,3 @@
-#!/usr/local/bin/python
 #
 #  mcvQC.py
 ###########################################################################
@@ -117,20 +116,20 @@ USAGE = 'Usage: mcvQC.py  inputFile'
 
 # for updating marker type
 UPDATE = '''update MRK_Marker
-	    set _Marker_Type_key = %s,
-	    	_ModifiedBy_key = %s,
-	    	modification_date = now()
-	    where _Marker_key = %s
-	    '''
+            set _Marker_Type_key = %s,
+                _ModifiedBy_key = %s,
+                modification_date = now()
+            where _Marker_key = %s
+            '''
 
 MARKER_KEY = '''select _Object_key as _Marker_key
-		from ACC_Accession
-		where _MGIType_key = 2
-		and _LogicalDB_key = 1
-		and prefixPart = 'MGI:'
-		and preferred = 1
-		and accID = '%s' 
-		'''
+                from ACC_Accession
+                where _MGIType_key = 2
+                and _LogicalDB_key = 1
+                and prefixPart = 'MGI:'
+                and preferred = 1
+                and accID = '%s' 
+                '''
 #
 #  GLOBALS
 #
@@ -245,7 +244,7 @@ def checkArgs ():
     global inputFile
 
     if len(sys.argv) != 2:
-        print USAGE
+        print(USAGE)
         sys.exit(1)
 
     inputFile = sys.argv[1]
@@ -268,8 +267,8 @@ def init ():
 
     global updatedBy, updatedByKey
 
-    print 'DB Server:' + db.get_sqlServer()
-    print 'DB Name:  ' + db.get_sqlDatabase()
+    print('DB Server:' + db.get_sqlServer())
+    print('DB Name:  ' + db.get_sqlDatabase())
     sys.stdout.flush()
 
     db.useOneConnection(1)
@@ -288,24 +287,24 @@ def init ():
     # create lookup of all official markers in the database 
     # mapped to their symbols
     results = db.sql('''select a.accid, m.symbol
-	from ACC_Accession a, MRK_Marker m
-	where a._MGIType_key = 2
-	and a._LogicalDB_key = 1
-	and a.prefixPart = 'MGI:'
-	and a._Object_key = m._Marker_key''', 'auto')
+        from ACC_Accession a, MRK_Marker m
+        where a._MGIType_key = 2
+        and a._LogicalDB_key = 1
+        and a.prefixPart = 'MGI:'
+        and a._Object_key = m._Marker_key''', 'auto')
 
     for r in results:
-	mgiIDToSymbolDict[r['accid']] = r['symbol']
+        mgiIDToSymbolDict[r['accid']] = r['symbol']
 
     # create lookup of all mcv and so ids mapped to their terms
     results = db.sql('''select a.accID, t.term
-	from ACC_Accession a, VOC_Term t
-	where a._LogicalDB_key in (145,146)
-	and a._MGIType_key = 13
-	and a._Object_key = t._Term_key''', 'auto')
+        from ACC_Accession a, VOC_Term t
+        where a._LogicalDB_key in (145,146)
+        and a._MGIType_key = 13
+        and a._Object_key = t._Term_key''', 'auto')
 
     for r in results:
-	termIDToTermDict[r['accID']] = r['term']
+        termIDToTermDict[r['accID']] = r['term']
 
     # create lookup of markers mapped to their SO/MCV IDs
     results = db.sql('''select a1.accID as termID, a2.accID as mgiID
@@ -315,7 +314,7 @@ def init ():
             and a1._MGIType_key = 13
             and a1._LogicalDB_key in (145, 146)
             and a1.preferred = 1
-	    and a1.prefixPart = 'MCV:'
+            and a1.prefixPart = 'MCV:'
             and v._Object_key = a2._Object_key
             and a2._MGIType_key = 2
             and a2._LogicalDB_key = 1
@@ -323,7 +322,7 @@ def init ():
     for r in results:
         mgiID = r['mgiID']
         termID = r['termID']
-        if not mgdMgiIdToTermIdDict.has_key(mgiID):
+        if mgiID not in mgdMgiIdToTermIdDict:
             mgdMgiIdToTermIdDict[mgiID] = []
         mgdMgiIdToTermIdDict[mgiID].append(termID)
 
@@ -339,10 +338,10 @@ def init ():
     for r in results:
         mgiID = r['mgiID']
         termID = r['termID']
-	if not inputTermIdLookupByMgiId.has_key(mgiID):
-	   inputTermIdLookupByMgiId[mgiID] = [] # default
-	if termID != None: # this case when only mgiID in file for delete
-	    inputTermIdLookupByMgiId[mgiID].append(termID)
+        if mgiID not in inputTermIdLookupByMgiId:
+           inputTermIdLookupByMgiId[mgiID] = [] # default
+        if termID != None: # this case when only mgiID in file for delete
+            inputTermIdLookupByMgiId[mgiID].append(termID)
     #
     # get marker types from the database
     #
@@ -350,20 +349,20 @@ def init ():
                 from MRK_Marker m, ACC_Accession a, MRK_Types t
                 where m._Marker_Status_key = 1
                 and m._Organism_key = 1
-		and m._Marker_key = a._Object_key
-		and a._MGIType_key = 2
-		and a._LogicalDB_key = 1
-		and a.preferred = 1
-		and a.prefixPart = 'MGI:'
-		and m._Marker_Type_key = t._Marker_Type_key''', 'auto')
+                and m._Marker_key = a._Object_key
+                and a._MGIType_key = 2
+                and a._LogicalDB_key = 1
+                and a.preferred = 1
+                and a.prefixPart = 'MGI:'
+                and m._Marker_Type_key = t._Marker_Type_key''', 'auto')
     for r in results:
-	mgiIdToMkrTypeDict[r['mgiID']] = r['name']
+        mgiIdToMkrTypeDict[r['mgiID']] = r['name']
 
     results = db.sql('''select name, _Marker_Type_key
-		from MRK_Types''', 'auto')
+                from MRK_Types''', 'auto')
     for r in results:
-	mkrTypeKeyToMkrTypeDict[ r['_Marker_Type_key'] ] =  r['name']
-	mkrTypeToKeyDict[r['name']] = r['_Marker_Type_key']
+        mkrTypeKeyToMkrTypeDict[ r['_Marker_Type_key'] ] =  r['name']
+        mkrTypeToKeyDict[r['name']] = r['_Marker_Type_key']
 
     # parse the MCV Note and load lookups
     # we store the association of a marker type to a MCV
@@ -380,22 +379,22 @@ def init ():
     # marker type
     cmds = []
     cmds.append('''
-    	select n._Object_key, rtrim(nc.note) as chunk, nc.sequenceNum 
+        select n._Object_key, rtrim(nc.note) as chunk, nc.sequenceNum 
         into temp notes 
         from MGI_Note n, MGI_NoteChunk nc 
         where n._MGIType_key = 13 
             and n._NoteType_key = 1001 
             and n._Note_key = nc._Note_key
-	    ''')
+            ''')
     cmds.append('create index notes_idx1 on notes(_Object_key)')
     cmds.append('''
-    	select t._Term_key, t.term, n.chunk
+        select t._Term_key, t.term, n.chunk
         from VOC_Term t 
-		left outer join notes n on n._object_key = t._term_key
-        		where t._Vocab_key = 79 
-        		and t._Term_key = n._Object_key 
+                left outer join notes n on n._object_key = t._term_key
+                        where t._Vocab_key = 79 
+                        and t._Term_key = n._Object_key 
         order by t._Term_key, n.sequenceNum
-	''')
+        ''')
     results = db.sql(cmds, 'auto')
     notes = {} # map the terms to their note chunks
     for r in results[2]:
@@ -404,23 +403,23 @@ def init ():
         # if there is a note chunk add it to the notes dictionary
         # we'll pull all the chunks together later
         if chunk != None:
-            if not notes.has_key(term):
+            if term not in notes:
                 notes[term] = []
             notes[term].append(chunk)
     # parse the marker type from the note, if there is one
-    for term in notes.keys():
-        note = string.join(notes[term], '')
+    for term in list(notes.keys()):
+        note = ''.join(notes[term])
         if not note[0:11] == 'Marker_Type':
             continue
 
         # parse the note
-	tokens = string.split(note, ';')
-	mType = tokens[0]
-	tokens = string.split(mType, '=')
-	
+        tokens = str.split(note, ';')
+        mType = tokens[0]
+        tokens = str.split(mType, '=')
+        
         # 2nd token is the marker type key
-        mkrTypeKey = int(string.strip(tokens[1]))
-	mkrType = mkrTypeKeyToMkrTypeDict[mkrTypeKey]
+        mkrTypeKey = int(str.strip(tokens[1]))
+        mkrType = mkrTypeKeyToMkrTypeDict[mkrTypeKey]
         # There is only 1  MCV term per MGI Mkr type
         mkrTypeToAssocMCVTermDict[mkrType]= term
         mcvTermToMkrTypeDict[term] = mkrType
@@ -432,28 +431,28 @@ def init ():
     #
     cmds = []
     cmds.append('''
-    	select _AncestorObject_key, _DescendentObject_key 
-	into temp clos 
+        select _AncestorObject_key, _DescendentObject_key 
+        into temp clos 
         from DAG_Closure 
         where _DAG_key = 9 
         and _MGIType_key = 13
-	''')
+        ''')
     cmds.append('create index clos_idx1 on clos(_AncestorObject_key)')
     cmds.append('create index clos_idx2 on clos(_DescendentObject_key)')
     cmds.append('''
-    	select t1.term as ancestorTerm, t2.term as descendentTerm 
-	from clos c, VOC_Term t1, VOC_Term t2 
-	where c._AncestorObject_key = t1._Term_key 
-	and c._DescendentObject_key = t2._Term_key 
+        select t1.term as ancestorTerm, t2.term as descendentTerm 
+        from clos c, VOC_Term t1, VOC_Term t2 
+        where c._AncestorObject_key = t1._Term_key 
+        and c._DescendentObject_key = t2._Term_key 
         order by t2.term
-	''')
+        ''')
     results = db.sql(cmds, 'auto')
     # the mcv terms that represent marker types
-    mcvMarkerTypeValues  = mkrTypeToAssocMCVTermDict.values()
+    mcvMarkerTypeValues  = list(mkrTypeToAssocMCVTermDict.values())
     for r in results[3]:
         aTerm = r['ancestorTerm']
         dTerm = r['descendentTerm']
-        if mcvTermToParentMkrTypeTermDict.has_key(dTerm):
+        if dTerm in mcvTermToParentMkrTypeTermDict:
             # we've already mapped this descendent to its marker type parent
             continue
         # dTerm may be a marker type term
@@ -466,10 +465,10 @@ def init ():
 
     # map marker keys to their marker type
     cmd = '''
-    	select _Marker_Type_key, _Marker_key
+        select _Marker_Type_key, _Marker_key
         from MRK_Marker
         where _Marker_Status_key = 1
-	'''
+        '''
     results = db.sql(cmd, 'auto')
     for r in results:
         mkrTypeKey = r['_Marker_Type_key']
@@ -497,7 +496,7 @@ def openFiles ():
     try:
         fpInput = open(inputFile, 'r')
     except:
-        print 'Cannot open input file: ' + inputFile
+        print('Cannot open input file: ' + inputFile)
         sys.exit(1)
 
     #
@@ -506,7 +505,7 @@ def openFiles ():
     try:
         fpBCP = open(bcpFile, 'w')
     except:
-        print 'Cannot open output file: ' + bcpFile
+        print('Cannot open output file: ' + bcpFile)
         sys.exit(1)
 
     #
@@ -515,57 +514,57 @@ def openFiles ():
     try:
         fpInvMrkRpt = open(invMrkRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + invMrkRptFile
+        print('Cannot open report file: ' + invMrkRptFile)
         sys.exit(1)
     try:
         fpSecMrkRpt = open(secMrkRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + secMrkRptFile
+        print('Cannot open report file: ' + secMrkRptFile)
         sys.exit(1)
     try:
         fpInvTermIdRpt = open(invTermIdRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + invTermIdRptFile
+        print('Cannot open report file: ' + invTermIdRptFile)
         sys.exit(1)
     try:
         fpInvJNumRpt = open(invJNumRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + invJNumRptFile
+        print('Cannot open report file: ' + invJNumRptFile)
         sys.exit(1)
     try:
         fpInvEvidRpt = open(invEvidRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + invEvidRptFile
+        print('Cannot open report file: ' + invEvidRptFile)
         sys.exit(1)
     try:
         fpInvEditorRpt = open(invEditorRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + invEditorRptFile
+        print('Cannot open report file: ' + invEditorRptFile)
         sys.exit(1)
     try:
         fpMultiMCVRpt = open(multiMcvRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + multiMcvRptFile
+        print('Cannot open report file: ' + multiMcvRptFile)
         sys.exit(1)
     try:
         fpConflictRpt = open(conflictRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + conflictRptFile
+        print('Cannot open report file: ' + conflictRptFile)
         sys.exit(1)
     try:
         fpGroupingTermRpt = open(groupingTermRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + groupingTermRptFile
+        print('Cannot open report file: ' + groupingTermRptFile)
         sys.exit(1)
     try:
         fpBeforeAfterRpt = open(beforeAfterRptFile, 'a')
     except:
-        print 'Cannot open report file: ' + beforeAfterRptFile
+        print('Cannot open report file: ' + beforeAfterRptFile)
         sys.exit(1)
     try:
         fpRptNamesRpt = open(rptNamesFile, 'a')
     except:
-        print 'Cannot open report file: ' + rptNamesFile
+        print('Cannot open report file: ' + rptNamesFile)
         sys.exit(1)
 
 
@@ -600,7 +599,7 @@ def closeFiles ():
 def loadTempTable ():
     global annot, updatedBy
 
-    print 'Create a bcp file from the input file'
+    print('Create a bcp file from the input file')
     sys.stdout.flush()
 
     #
@@ -614,87 +613,87 @@ def loadTempTable ():
         tokens = re.split(TAB, line[:-1])
         termID  = tokens[0]
         mgiID = tokens[1]
-	jNum = tokens[2]
-	evidCode = tokens[3]
-	inferFrom = tokens[4]
-	qual = tokens[5]
-	if qual == None:
-	    qual = ''
-	editor = tokens[6]
-	date = tokens[7]
-	if date == None:
-	    date = ''
-	notes = tokens[8]
-	if notes == None:
-	    notes = ''
-	ldb = '' # not used for mcvload
-	
-	termIDExists = len(re.findall('[a-zA-Z0-9]',termID))
-	mgiIDExists = len(re.findall('[a-zA-Z0-9]',mgiID))
-	jNumExists = len(re.findall('[a-zA-Z0-9]',jNum))
-	evidCodeExists = len(re.findall('[a-zA-Z0-9]',evidCode))
-	inferFromExists = len(re.findall('[a-zA-Z0-9]',inferFrom))
-	qualExists = len(re.findall('[a-zA-Z0-9]',qual))
-	editorExists = len(re.findall('[a-zA-Z0-9]',editor))
-	dateExists = len(re.findall('[a-zA-Z0-9]',date))
-	
-	#
-	# Special Case
-	# If there is only an mgiID this is ok, it means 
+        jNum = tokens[2]
+        evidCode = tokens[3]
+        inferFrom = tokens[4]
+        qual = tokens[5]
+        if qual == None:
+            qual = ''
+        editor = tokens[6]
+        date = tokens[7]
+        if date == None:
+            date = ''
+        notes = tokens[8]
+        if notes == None:
+            notes = ''
+        ldb = '' # not used for mcvload
+        
+        termIDExists = len(re.findall('[a-zA-Z0-9]',termID))
+        mgiIDExists = len(re.findall('[a-zA-Z0-9]',mgiID))
+        jNumExists = len(re.findall('[a-zA-Z0-9]',jNum))
+        evidCodeExists = len(re.findall('[a-zA-Z0-9]',evidCode))
+        inferFromExists = len(re.findall('[a-zA-Z0-9]',inferFrom))
+        qualExists = len(re.findall('[a-zA-Z0-9]',qual))
+        editorExists = len(re.findall('[a-zA-Z0-9]',editor))
+        dateExists = len(re.findall('[a-zA-Z0-9]',date))
+        
+        #
+        # Special Case
+        # If there is only an mgiID this is ok, it means 
         # curator intends to delete all annotations
-	#
-	if termIDExists == 0 and jNumExists == 0 and \
-		evidCodeExists == 0 and inferFromExists == 0 \
-		and editorExists == 0 and mgiIDExists > 0:
-	    # check the MGI ID for format 
-	    if re.match('MGI:[0-9]+',mgiID) == None:
-                print 'Invalid MGI ID (line ' + str(count) + ')'
+        #
+        if termIDExists == 0 and jNumExists == 0 and \
+                evidCodeExists == 0 and inferFromExists == 0 \
+                and editorExists == 0 and mgiIDExists > 0:
+            # check the MGI ID for format 
+            if re.match('MGI:[0-9]+',mgiID) == None:
+                print('Invalid MGI ID (line ' + str(count) + ')')
                 fpBCP.close()
                 closeFiles()
                 sys.exit(1)
-	    # write out to the bcp file:
-	    fpBCP.write(termID + TAB + mgiID + TAB + jNum +  TAB + evidCode + \
+            # write out to the bcp file:
+            fpBCP.write(termID + TAB + mgiID + TAB + jNum +  TAB + evidCode + \
             TAB + editor + NL)
 
-	    # add to the annotation dictionary so it gets written to the 
-	    # annotation file
-	    annotList = [termID, mgiID, jNum, evidCode, inferFrom, qual, \
-		editor, date, notes, ldb]
-            if not annot.has_key(mgiID):
+            # add to the annotation dictionary so it gets written to the 
+            # annotation file
+            annotList = [termID, mgiID, jNum, evidCode, inferFrom, qual, \
+                editor, date, notes, ldb]
+            if mgiID not in annot:
                 annot[mgiID] = []
             annot[mgiID].append(annotList)
-		
-	    # get next input line and continue
-	    line = fpInput.readline()
-	    continue
+                
+            # get next input line and continue
+            line = fpInput.readline()
+            continue
 
         # There must be a term ID in proper format
         # SO:nnnnnnn or MCV:nnnnnnn
         if termIDExists == 0:
-            print 'Missing Term ID (line ' + str(count) + ')'
+            print('Missing Term ID (line ' + str(count) + ')')
             fpBCP.close()
             closeFiles()
             sys.exit(1)
-	else:
-	    if re.match('MCV:[0-9]+',termID) == None and \
-		re.match('SO:[0-9]+',termID) == None:
-		print 'Invalid Term ID (line ' + str(count) + ')' + ' ' + \
-		    termID
-		fpBCP.close()
-		closeFiles()
-		sys.exit(1)
+        else:
+            if re.match('MCV:[0-9]+',termID) == None and \
+                re.match('SO:[0-9]+',termID) == None:
+                print('Invalid Term ID (line ' + str(count) + ')' + ' ' + \
+                    termID)
+                fpBCP.close()
+                closeFiles()
+                sys.exit(1)
 
         #
         # There must be an MGI ID in proper format (MGI:nnnnnnn).
         #
         if mgiIDExists == 0:
-            print 'Missing MGI ID (line ' + str(count) + ')'
+            print('Missing MGI ID (line ' + str(count) + ')')
             fpBCP.close()
             closeFiles()
             sys.exit(1)
         else:
             if re.match('MGI:[0-9]+',mgiID) == None:
-                print 'Invalid MGI ID (line ' + str(count) + ')'
+                print('Invalid MGI ID (line ' + str(count) + ')')
                 fpBCP.close()
                 closeFiles()
                 sys.exit(1)
@@ -703,13 +702,13 @@ def loadTempTable ():
         # There must be an J Number in proper format (J:nnnnnnn).
         #
         if jNumExists == 0:
-            print 'Missing J Number (line ' + str(count) + ')'
+            print('Missing J Number (line ' + str(count) + ')')
             fpBCP.close()
             closeFiles()
             sys.exit(1)
         else:
             if re.match('J:[0-9]+',jNum) == None:
-                print 'Invalid J Number (line ' + str(count) + ')'
+                print('Invalid J Number (line ' + str(count) + ')')
                 fpBCP.close()
                 closeFiles()
                 sys.exit(1)
@@ -718,7 +717,7 @@ def loadTempTable ():
         # There must be an evidence code
         #
         if evidCodeExists == 0:
-            print 'Missing Evidence Code(line ' + str(count) + ')'
+            print('Missing Evidence Code(line ' + str(count) + ')')
             fpBCP.close()
             closeFiles()
             sys.exit(1)
@@ -727,13 +726,13 @@ def loadTempTable ():
         # There must be an editor login
         #
         if editorExists == 0:
-            print 'Missing Editor login (line ' + str(count) + ')'
+            print('Missing Editor login (line ' + str(count) + ')')
             fpBCP.close()
             closeFiles()
             sys.exit(1)
 
         fpBCP.write(termID + TAB + mgiID + TAB + jNum +  TAB + evidCode + \
-	    TAB + editor + NL)
+            TAB + editor + NL)
 
         #
         # Maintain a dictionary of the MGI IDs that are in the input file.
@@ -741,11 +740,11 @@ def loadTempTable ():
         # the annotation attributes for that the MGI ID.
         #
         if mgiID != '':
-	    annotList = [termID, mgiID, jNum, evidCode,	inferFrom, \
-		qual, editor, date, notes, ldb]
-            if not annot.has_key(mgiID):
-		annot[mgiID] = []
-	    annot[mgiID].append(annotList)
+            annotList = [termID, mgiID, jNum, evidCode,	inferFrom, \
+                qual, editor, date, notes, ldb]
+            if mgiID not in annot:
+                annot[mgiID] = []
+            annot[mgiID].append(annotList)
 
         line = fpInput.readline()
         count += 1
@@ -758,14 +757,14 @@ def loadTempTable ():
     #
     # Load the input data into the temp table.
     #
-    print 'Load the input data into the temp table: ' + tempTable
+    print('Load the input data into the temp table: ' + tempTable)
     sys.stdout.flush()
 
     bcpCmd = '%s %s %s %s "/" %s "\\t" "\\n" mgd' % \
         (BCP_COMMAND, db.get_sqlServer(), db.get_sqlDatabase(),tempTable,
         bcpFile)
     rc = os.system(bcpCmd)
-    if rc <> 0:
+    if rc != 0:
         closeFiles()
         sys.exit(1)
 
@@ -778,10 +777,10 @@ def loadTempTable ():
 #
 def createMarkerTypeConflictReport():
     global nonfatalCount, nonfatalReportNames
-    print 'Create the Markers with conflict between Marker Type and MCV Marker Type Report'
+    print('Create the Markers with conflict between Marker Type and MCV Marker Type Report')
     sys.stdout.flush()
-    fpConflictRpt.write(string.center('Markers whose Marker Type has been updated to match MCV Marker Type',136) + NL)
-    fpConflictRpt.write(string.center('(' + timestamp + ')',136) + 2*NL)
+    fpConflictRpt.write(str.center('Markers whose Marker Type has been updated to match MCV Marker Type',136) + NL)
+    fpConflictRpt.write(str.center('(' + timestamp + ')',136) + 2*NL)
     fpConflictRpt.write('%-16s  %-20s  %-30s  %-30s  %-30s%s' %
                      ('MGI ID','Old Marker Type','MCV Term',
                       'MCV Marker Type Term','Web Display MCV Term',NL))
@@ -793,50 +792,50 @@ def createMarkerTypeConflictReport():
     # Get the MGI ID and Term IDs from the temp table
     #
     cmds.append('''
-    	select tmp.termID, tmp.mgiID 
+        select tmp.termID, tmp.mgiID 
         from %s tmp
         where tmp.mgiID is not null
         order by lower(tmp.mgiID)
-	''' % (tempTable))
+        ''' % (tempTable))
 
     results = db.sql(cmds,'auto')
     conflictCt = 0
     for r in results[0]:
-	# get marker type
+        # get marker type
         mgiID = r['mgiID']
-	if not mgiIdToMkrTypeDict.has_key(mgiID):
-	    print 'MGI ID: %s not primary or not valid' % mgiID
-	    continue
-	mkrType = mgiIdToMkrTypeDict[mgiID]
-	# get term
-	termID = r['termID']
-	if not termIDToTermDict.has_key(termID):
+        if mgiID not in mgiIdToMkrTypeDict:
+            print('MGI ID: %s not primary or not valid' % mgiID)
             continue
-	mcvTerm = termIDToTermDict[termID]
-	# get mcv marker type term and the corresponding marker type
-	if not mcvTermToParentMkrTypeTermDict.has_key(mcvTerm):
-	    # could be a grouping term
-	    continue
-	if not mcvTermToParentMkrTypeTermDict.has_key(mcvTerm):
-	    continue
-	mcvMkrTypeTerm = mcvTermToParentMkrTypeTermDict[mcvTerm]
-	if not mcvTermToMkrTypeDict.has_key(mcvMkrTypeTerm):
-	    continue
-	mcvMkrType = mcvTermToMkrTypeDict[mcvMkrTypeTerm]
-	if mkrType != mcvMkrType:
-	    # save for later marker type update
-	    markersToUpdateDict[mgiID] = mcvMkrType
-	    conflictCt += 1
+        mkrType = mgiIdToMkrTypeDict[mgiID]
+        # get term
+        termID = r['termID']
+        if termID not in termIDToTermDict:
+            continue
+        mcvTerm = termIDToTermDict[termID]
+        # get mcv marker type term and the corresponding marker type
+        if mcvTerm not in mcvTermToParentMkrTypeTermDict:
+            # could be a grouping term
+            continue
+        if mcvTerm not in mcvTermToParentMkrTypeTermDict:
+            continue
+        mcvMkrTypeTerm = mcvTermToParentMkrTypeTermDict[mcvTerm]
+        if mcvMkrTypeTerm not in mcvTermToMkrTypeDict:
+            continue
+        mcvMkrType = mcvTermToMkrTypeDict[mcvMkrTypeTerm]
+        if mkrType != mcvMkrType:
+            # save for later marker type update
+            markersToUpdateDict[mgiID] = mcvMkrType
+            conflictCt += 1
 
-	    loadAssignedTerm = mkrTypeToAssocMCVTermDict[mkrType]
+            loadAssignedTerm = mkrTypeToAssocMCVTermDict[mkrType]
 
-	    #print 'mgiID: %s mkrType: %s mcvTerm: %s mcvMkrTypeTerm: %s loadAssignedTerm: %s' % (mgiID, mkrType, mcvTerm, mcvMkrTypeTerm, loadAssignedTerm)
-	    fpConflictRpt.write('%-16s  %-20s  %-30s  %-30s  %-30s%s' %
+            #print 'mgiID: %s mkrType: %s mcvTerm: %s mcvMkrTypeTerm: %s loadAssignedTerm: %s' % (mgiID, mkrType, mcvTerm, mcvMkrTypeTerm, loadAssignedTerm)
+            fpConflictRpt.write('%-16s  %-20s  %-30s  %-30s  %-30s%s' %
             (mgiID, mkrType, mcvTerm, mcvMkrTypeTerm, loadAssignedTerm, NL))
     fpConflictRpt.write(NL + 'Number of Conflicts between Marker Type ' +
-	'and MCV Marker Type: ' + str(conflictCt) + NL)
+        'and MCV Marker Type: ' + str(conflictCt) + NL)
     if conflictCt > 0 and not conflictRptFile in nonfatalReportNames:
-	nonfatalReportNames.append(conflictRptFile + NL)
+        nonfatalReportNames.append(conflictRptFile + NL)
     nonfatalCount += conflictCt
 
 # Purpose: Create the invalid marker report.
@@ -848,10 +847,10 @@ def createMarkerTypeConflictReport():
 def createInvMarkerReport ():
     global annot, nonfatalCount, nonfatalReportNames
 
-    print 'Create the invalid marker report'
+    print('Create the invalid marker report')
     sys.stdout.flush()
-    fpInvMrkRpt.write(string.center('Invalid Marker Report',136) + NL)
-    fpInvMrkRpt.write(string.center('(' + timestamp + ')',136) + 2*NL)
+    fpInvMrkRpt.write(str.center('Invalid Marker Report',136) + NL)
+    fpInvMrkRpt.write(str.center('(' + timestamp + ')',136) + 2*NL)
     fpInvMrkRpt.write('%-20s  %-16s  %-20s  %-20s  %-30s%s' %
                      ('Term ID','MGI ID','Associated Object',
                       'Marker Status','Reason',NL))
@@ -867,10 +866,10 @@ def createInvMarkerReport ():
     # 3) Exist for a marker, but the status is not "official" or "interim".
     #
     cmds.append('''
-    	select tmp.termID, 
-        	tmp.mgiID, 
-        	null as name, 
-        	null as status 
+        select tmp.termID, 
+                tmp.mgiID, 
+                null as name, 
+                null as status 
         from %s tmp
         where tmp.mgiID is not null and
             not exists (select 1
@@ -913,7 +912,7 @@ def createInvMarkerReport ():
                       m._Marker_Status_key != 1 and 
                       m._Marker_Status_key = ms._Marker_Status_key 
          order by mgiID, termID
-	 ''' % (tempTable, tempTable, tempTable))
+         ''' % (tempTable, tempTable, tempTable))
 
     results = db.sql(cmds,'auto')
 
@@ -959,10 +958,10 @@ def createInvMarkerReport ():
 def createSecMarkerReport ():
     global annot, nonfatalCount, nonfatalReportNames
 
-    print 'Create the secondary marker report'
+    print('Create the secondary marker report')
     sys.stdout.flush()
-    fpSecMrkRpt.write(string.center('Secondary Marker Report',130) + NL)
-    fpSecMrkRpt.write(string.center('(' + timestamp + ')',130) + 2*NL)
+    fpSecMrkRpt.write(str.center('Secondary Marker Report',130) + NL)
+    fpSecMrkRpt.write(str.center('(' + timestamp + ')',130) + 2*NL)
     fpSecMrkRpt.write('%-20s  %-16s  %-50s  %-16s%s' %
                      ('Term ID', 'Secondary MGI ID',
                       'Marker Symbol','Primary MGI ID',NL))
@@ -976,7 +975,7 @@ def createSecMarkerReport ():
     # for a marker.
     #
     cmds.append('''
-    	select tmp.termID, 
+        select tmp.termID, 
                tmp.mgiID, 
                m.symbol, 
                a2.accID 
@@ -995,7 +994,7 @@ def createSecMarkerReport ():
                       a2.preferred = 1 and 
                       a2._Object_key = m._Marker_key 
         order by lower(tmp.mgiID), lower(tmp.termID)
-	''' % (tempTable))
+        ''' % (tempTable))
 
     results = db.sql(cmds,'auto')
 
@@ -1026,10 +1025,10 @@ def createSecMarkerReport ():
 def createInvTermIdReport ():
     global fatalCount, fatalReportNames
 
-    print 'Create the invalid Term ID report'
+    print('Create the invalid Term ID report')
     sys.stdout.flush()
-    fpInvTermIdRpt.write(string.center('Invalid Term ID Report',80) + NL)
-    fpInvTermIdRpt.write(string.center('(' + timestamp + ')',80) + 2*NL)
+    fpInvTermIdRpt.write(str.center('Invalid Term ID Report',80) + NL)
+    fpInvTermIdRpt.write(str.center('(' + timestamp + ')',80) + 2*NL)
     fpInvTermIdRpt.write('%-20s%s' % ('Term ID',NL))
     fpInvTermIdRpt.write(20*'-' + NL)
     cmds = []
@@ -1038,16 +1037,16 @@ def createInvTermIdReport ():
     # Find any term IDs from the input data that are not in the database.
     #
     cmds.append('''
-    	select tmp.termID
+        select tmp.termID
         from %s tmp 
         where tmp.termID is not null and 
                       not exists (select 1 
                                   from ACC_Accession a 
                                   where lower(a.accID) = lower(tmp.termID) and 
                                         a._MGIType_key = 13 and 
-					a._LogicalDB_key in (145,146)) 
+                                        a._LogicalDB_key in (145,146)) 
         order by lower(tmp.termID)
-	''' % (tempTable))
+        ''' % (tempTable))
 
     results = db.sql(cmds,'auto')
 
@@ -1077,34 +1076,34 @@ def createInvTermIdReport ():
 def createGroupingTermIdReport ():
     global fatalCount, fatalReportNames
 
-    print 'Create the Grouping Term report'
+    print('Create the Grouping Term report')
     sys.stdout.flush()
-    fpGroupingTermRpt.write(string.center('Annotations to Grouping Terms Report',80) + NL)
-    fpGroupingTermRpt.write(string.center('(' + timestamp + ')',80) + 2*NL)
+    fpGroupingTermRpt.write(str.center('Annotations to Grouping Terms Report',80) + NL)
+    fpGroupingTermRpt.write(str.center('(' + timestamp + ')',80) + 2*NL)
     fpGroupingTermRpt.write('%-20s %-20s%s' % ('MGI ID', 'Term ID',NL))
     fpGroupingTermRpt.write(20*'-' + ' ' + 20*'-' + NL)
     quotedTerms=''
-    for t in string.split(groupingTermIds, ','):
-	quotedTerms = "%s'%s'," % (quotedTerms, t)
+    for t in str.split(groupingTermIds, ','):
+        quotedTerms = "%s'%s'," % (quotedTerms, t)
     quotedTerms = quotedTerms[:-1]
     cmds = []
     #
     # Find any annotations to grouping IDs
     #
     cmds.append('''
-    	select tmp.mgiID, tmp.termID 
+        select tmp.mgiID, tmp.termID 
         from %s tmp 
         where tmp.termID is not null 
-	and lower(tmp.termID) in (%s)
+        and lower(tmp.termID) in (%s)
         order by lower(tmp.termID)
-	''' % (tempTable, quotedTerms.lower()))
+        ''' % (tempTable, quotedTerms.lower()))
     results = db.sql(cmds,'auto')
 
     #
     # Write a record to the report for each grouping term annotation
     #
     for r in results[0]:
-	mgiID = r['mgiID']
+        mgiID = r['mgiID']
         termID = r['termID']
         fpGroupingTermRpt.write('%-20s%s%-20s%s' % (mgiID, TAB, termID, NL))
 
@@ -1125,10 +1124,10 @@ def createGroupingTermIdReport ():
 def createInvJNumReport ():
     global fatalCount, fatalReportNames
 
-    print 'Create the invalid J Number report'
+    print('Create the invalid J Number report')
     sys.stdout.flush()
-    fpInvJNumRpt.write(string.center('Invalid J Number Report',80) + NL)
-    fpInvJNumRpt.write(string.center('(' + timestamp + ')',80) + 2*NL)
+    fpInvJNumRpt.write(str.center('Invalid J Number Report',80) + NL)
+    fpInvJNumRpt.write(str.center('(' + timestamp + ')',80) + 2*NL)
     fpInvJNumRpt.write('%-20s%s' % ('J Number',NL))
     fpInvJNumRpt.write(20*'-' + NL)
     cmds = []
@@ -1137,25 +1136,25 @@ def createInvJNumReport ():
     # Find any J Numbers from the input data that are not in the database.
     #
     cmds.append('''
-    	select tmp.jNum 
-	from %s tmp 
-	where tmp.jNum is not null and
-	    not exists (select 1 from ACC_Accession a 
-		  where lower(a.accID) = lower(tmp.jNum) and 
-			a._MGIType_key = 1 and 
-			a._LogicalDB_key = 1 and 
-			a.prefixPart = 'J:' and 
-			a.preferred = 1) 
-	order by lower(tmp.jNum)
-	''' % (tempTable))
+        select tmp.jNum 
+        from %s tmp 
+        where tmp.jNum is not null and
+            not exists (select 1 from ACC_Accession a 
+                  where lower(a.accID) = lower(tmp.jNum) and 
+                        a._MGIType_key = 1 and 
+                        a._LogicalDB_key = 1 and 
+                        a.prefixPart = 'J:' and 
+                        a.preferred = 1) 
+        order by lower(tmp.jNum)
+        ''' % (tempTable))
     results = db.sql(cmds,'auto')
 
     #
     # Write the records to the report.
     #
     for r in results[0]:
-	jNum = r['jNum']
-	fpInvJNumRpt.write('%-20s%s' % (jNum, NL))
+        jNum = r['jNum']
+        fpInvJNumRpt.write('%-20s%s' % (jNum, NL))
    
     numErrors = len(results[0])
     fpInvJNumRpt.write(NL + 'Number of Rows: ' + str(numErrors) + NL)
@@ -1174,10 +1173,10 @@ def createInvJNumReport ():
 def createInvEvidReport ():
     global fatalCount, fatalReportNames
 
-    print 'Create the invalid evidence code report'
+    print('Create the invalid evidence code report')
     sys.stdout.flush()
-    fpInvEvidRpt.write(string.center('Invalid Evidence Code Report',80) + NL)
-    fpInvEvidRpt.write(string.center('(' + timestamp + ')',80) + 2*NL)
+    fpInvEvidRpt.write(str.center('Invalid Evidence Code Report',80) + NL)
+    fpInvEvidRpt.write(str.center('(' + timestamp + ')',80) + 2*NL)
     fpInvEvidRpt.write('%-20s%s' % ('Evidence Code',NL))
     fpInvEvidRpt.write(20*'-' + NL)
     cmds = []
@@ -1186,13 +1185,13 @@ def createInvEvidReport ():
     # Find any Evidence Codes from the input data that are not in the database.
     #
     cmds.append('''
-    	select tmp.evidCode 
+        select tmp.evidCode 
         from %s tmp 
         where tmp.evidCode is not null and 
             not exists (select 1 from VOC_Term t 
-            	where t._Vocab_key = 80 and 
-            	lower(tmp.evidCode) = lower(t.term))
-	''' % (tempTable))
+                where t._Vocab_key = 80 and 
+                lower(tmp.evidCode) = lower(t.term))
+        ''' % (tempTable))
     results = db.sql(cmds,'auto')
 
     #
@@ -1219,10 +1218,10 @@ def createInvEvidReport ():
 def createInvEditorReport ():
     global fatalCount, fatalReportNames
 
-    print 'Create the invalid editor login report'
+    print('Create the invalid editor login report')
     sys.stdout.flush()
-    fpInvEditorRpt.write(string.center('Invalid Editor Login Report',80) + NL)
-    fpInvEditorRpt.write(string.center('(' + timestamp + ')',80) + 2*NL)
+    fpInvEditorRpt.write(str.center('Invalid Editor Login Report',80) + NL)
+    fpInvEditorRpt.write(str.center('(' + timestamp + ')',80) + 2*NL)
     fpInvEditorRpt.write('%-20s%s' % ('Editor Login',NL))
     fpInvEditorRpt.write(20*'-' + NL)
     cmds = []
@@ -1231,12 +1230,12 @@ def createInvEditorReport ():
     # Find any Editor logins from the input data that are not in the database.
     #
     cmds.append('''
-    	select tmp.editor 
+        select tmp.editor 
         from %s tmp
         where tmp.editor is not null and 
         not exists (select 1 from MGI_User u 
-        	where lower(u.login) = lower(tmp.editor))
-	''' % (tempTable))
+                where lower(u.login) = lower(tmp.editor))
+        ''' % (tempTable))
     results = db.sql(cmds,'auto')
 
     #
@@ -1266,40 +1265,40 @@ def createInvEditorReport ():
 def createMultipleMCVReport():
     global nonfatalCount, annot, nonfatalReportNames
 
-    print 'Create the multiple MCV annotation report'
+    print('Create the multiple MCV annotation report')
     sys.stdout.flush()
-    fpMultiMCVRpt.write(string.center(\
-	'Multiple MCV Annotation Report',80) + NL)
-    fpMultiMCVRpt.write(string.center('(' + timestamp + ')',80) + 2*NL)
+    fpMultiMCVRpt.write(str.center(\
+        'Multiple MCV Annotation Report',80) + NL)
+    fpMultiMCVRpt.write(str.center('(' + timestamp + ')',80) + 2*NL)
 
     # 
     # Report markers in the input annotated to multiple terms
     # in the input
     #
-    fpMultiMCVRpt.write(string.center(\
+    fpMultiMCVRpt.write(str.center(\
         'Multiple MCV Annotation In the Input File Report',80) + 2*NL)
     fpMultiMCVRpt.write('%-20s  %-16s  %-20s  %-30s%s' %
                      ('MGI ID','Symbol',
                       'Term ID','Term',NL))
     fpMultiMCVRpt.write(20*'-' + ' ' + 16*'-' + ' ' + 20*'-' + ' ' + 30*'-' + ' ' + NL)
 
-    mgiIDList = annot.keys()
+    mgiIDList = list(annot.keys())
     mgiIDList.sort()
     multiCt = 0
     for mgiID in mgiIDList:
         attrs = annot[mgiID]
-	if len(attrs) > 1:
-	    multiCt += 1
-	    for attrList in attrs:
-		mgiID = attrList[1]
-		symbol = mgiIDToSymbolDict[mgiID]
-		termID = attrList[0]
-		term = termIDToTermDict[termID]
-		fpMultiMCVRpt.write('%-20s  %-16s  %-20s  %-30s%s' %
-		(mgiID, symbol, termID, term, NL))    
+        if len(attrs) > 1:
+            multiCt += 1
+            for attrList in attrs:
+                mgiID = attrList[1]
+                symbol = mgiIDToSymbolDict[mgiID]
+                termID = attrList[0]
+                term = termIDToTermDict[termID]
+                fpMultiMCVRpt.write('%-20s  %-16s  %-20s  %-30s%s' %
+                (mgiID, symbol, termID, term, NL))    
     fpMultiMCVRpt.write(NL + 'Number of Markers with Multiple MCV Annotations: ' + str(multiCt) + NL)
     if multiCt > 0 and not multiMcvRptFile in nonfatalReportNames:
-	nonfatalReportNames.append(multiMcvRptFile + NL)
+        nonfatalReportNames.append(multiMcvRptFile + NL)
     nonfatalCount += multiCt
 
 #
@@ -1312,34 +1311,34 @@ def createMultipleMCVReport():
 #
 def createBeforeAfterReport():
 
-    print 'Create the Before/After annotation report'
-    fpBeforeAfterRpt.write(string.center('Before/After Report',110) + 2*NL)
+    print('Create the Before/After annotation report')
+    fpBeforeAfterRpt.write(str.center('Before/After Report',110) + 2*NL)
     fpBeforeAfterRpt.write('%-12s  %-20s  %-30s  %-30s  %-30s  %-30s%s' %
                      ('MGI ID','Symbol',
                       'Before Term ID(s)','Before Term(s)','After Term ID(s)', 'After Term(s)', NL))
     fpBeforeAfterRpt.write(20*'-' + ' ' + 20*'-' + ' ' + 30*'-' + ' ' + \
-	30*'-' +  ' ' + 30*'-' +  ' ' + 30*'-' +  ' ' + NL)
+        30*'-' +  ' ' + 30*'-' +  ' ' + 30*'-' +  ' ' + NL)
 
-    for mgiID in inputTermIdLookupByMgiId.keys():
-	symbol = mgiIDToSymbolDict[mgiID]
-	inputTermIDList = []
-	if inputTermIdLookupByMgiId.has_key(mgiID):
-	    inputTermIDList = inputTermIdLookupByMgiId[mgiID]
-	inputTermList = []
-	for id in inputTermIDList:
-	    if id != None:
-		term = termIDToTermDict[id]
-		inputTermList.append(term)
-	mgdTermIDList = []
-	if mgdMgiIdToTermIdDict.has_key(mgiID):
-	    mgdTermIDList = mgdMgiIdToTermIdDict[mgiID]
-	mgdTermList = []
-	for id in mgdTermIDList:
-	    term = termIDToTermDict[id]
-	    mgdTermList.append(term)
-	fpBeforeAfterRpt.write('%-20s  %-20s  %-30s  %-30s  %-30s  %-30s%s' %
-	    (mgiID, symbol, ','.join(mgdTermIDList), ','.join(mgdTermList), \
-		','.join(inputTermIDList), ','.join(inputTermList), NL))
+    for mgiID in list(inputTermIdLookupByMgiId.keys()):
+        symbol = mgiIDToSymbolDict[mgiID]
+        inputTermIDList = []
+        if mgiID in inputTermIdLookupByMgiId:
+            inputTermIDList = inputTermIdLookupByMgiId[mgiID]
+        inputTermList = []
+        for id in inputTermIDList:
+            if id != None:
+                term = termIDToTermDict[id]
+                inputTermList.append(term)
+        mgdTermIDList = []
+        if mgiID in mgdMgiIdToTermIdDict:
+            mgdTermIDList = mgdMgiIdToTermIdDict[mgiID]
+        mgdTermList = []
+        for id in mgdTermIDList:
+            term = termIDToTermDict[id]
+            mgdTermList.append(term)
+        fpBeforeAfterRpt.write('%-20s  %-20s  %-30s  %-30s  %-30s  %-30s%s' %
+            (mgiID, symbol, ','.join(mgdTermIDList), ','.join(mgdTermList), \
+                ','.join(inputTermIDList), ','.join(inputTermList), NL))
 
 #
 # Purpose: Create the annotation file from the dictionary termID/marker
@@ -1350,27 +1349,27 @@ def createBeforeAfterReport():
 # Throws: Nothing
 #
 def createAnnotFile ():
-    print 'Create the annotation file'
+    print('Create the annotation file')
     sys.stdout.flush()
 
     try:
         fpAnnot = open(annotFile, 'w')
     except:
-        print 'Cannot open output file: ' + annotFile
+        print('Cannot open output file: ' + annotFile)
         sys.exit(1)
 
-    mgiIDList = annot.keys()
+    mgiIDList = list(annot.keys())
     mgiIDList.sort()
 
     for mgiID in mgiIDList:
-	# get the list of attribute lists for this mgiID
+        # get the list of attribute lists for this mgiID
         attrs = annot[mgiID]
-	# for each attribute list write out attributes to the
-	# annotation file
-	for attrList in attrs:
-	    line = TAB.join(attrList)
-	    line += NL
-	    fpAnnot.write(line)
+        # for each attribute list write out attributes to the
+        # annotation file
+        for attrList in attrs:
+            line = TAB.join(attrList)
+            line += NL
+            fpAnnot.write(line)
     fpAnnot.close()
 
 #
@@ -1382,11 +1381,11 @@ def createAnnotFile ():
 #
 def updateMarkerType ():
     for mgiID in markersToUpdateDict:
-	typeTerm = markersToUpdateDict[mgiID]
-	mrkTypeKey = mkrTypeToKeyDict[typeTerm]
-	results = db.sql(MARKER_KEY % mgiID, 'auto')
-	mrkKey = results[0]['_Marker_key']
-	db.sql(UPDATE % (mrkTypeKey, updatedByKey, mrkKey), None)
+        typeTerm = markersToUpdateDict[mgiID]
+        mrkTypeKey = mkrTypeToKeyDict[typeTerm]
+        results = db.sql(MARKER_KEY % mgiID, 'auto')
+        mrkKey = results[0]['_Marker_key']
+        db.sql(UPDATE % (mrkTypeKey, updatedByKey, mrkKey), None)
     db.commit()
 
 #	
@@ -1417,13 +1416,13 @@ if liveRun == "1":
     updateMarkerType()
 
 # write  non fatal report names to stdout
-names = string.join(nonfatalReportNames,'' )
+names = ''.join(nonfatalReportNames)
 fpRptNamesRpt.write('\nNon-Fatal QC errors detected in the following files:\n')
 fpRptNamesRpt.write(names)
 
 # write fatal report names to stdout
 fpRptNamesRpt.write('\nFatalQC errors detected in the following files:\n')
-names = string.join(fatalReportNames,'' )
+names = ''.join(fatalReportNames)
 fpRptNamesRpt.write(names)
 
 fpRptNamesRpt.close()
