@@ -379,12 +379,11 @@ def init ():
     # marker type
     cmds = []
     cmds.append('''
-        select n._Object_key, rtrim(nc.note) as chunk, nc.sequenceNum 
+        select n._Object_key, rtrim(n.note) as chunk
         into temp notes 
-        from MGI_Note n, MGI_NoteChunk nc 
+        from MGI_Note n
         where n._MGIType_key = 13 
             and n._NoteType_key = 1001 
-            and n._Note_key = nc._Note_key
             ''')
     cmds.append('create index notes_idx1 on notes(_Object_key)')
     cmds.append('''
@@ -393,7 +392,7 @@ def init ():
                 left outer join notes n on n._object_key = t._term_key
                         where t._Vocab_key = 79 
                         and t._Term_key = n._Object_key 
-        order by t._Term_key, n.sequenceNum
+        order by t._Term_key
         ''')
     results = db.sql(cmds, 'auto')
     notes = {} # map the terms to their note chunks
