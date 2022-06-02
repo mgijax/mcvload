@@ -111,6 +111,27 @@ rm -rf ${LOG_RUNVOCLOAD}
 echo "Running MCV Vocabulary load"  | tee -a ${LOG_RUNVOCLOAD}
 CONFIG_VOCLOAD=${VOCLOAD}/MCV.config
 
+cat - <<EOSQL | psql -h${MGD_DBSERVER} -d${MGD_DBNAME} -U mgd_dbo -e  >> ${LOG_RUNVOCLOAD}
+
+create temp table somcvTemp as
+select a1.accid as mcvID, t._term_key as mcvTermKey, t.term as mcvTerm, t.note as mcvNote, a2._accession_key, a2.accid as soID
+    from voc_term t, acc_accession a1, acc_accession a2
+    where a1._logicaldb_key = 146
+    and a1._mgitype_key = 13
+    and a1._object_key = t._term_key
+    and a2._logicaldb_key = 145
+    and a2._mgitype_key = 13
+    and a2._object_key = t._term_key
+;
+
+update ACC_Accession a
+set _LogicalDB_key = 146, preferred = 0, private = 0
+from somcvTemp s
+where a._Accession_key = s._accession_key
+;
+
+EOSQL
+
 ${VOCLOAD}/runOBOIncLoad.sh ${CONFIG_VOCLOAD} >> ${LOG_RUNVOCLOAD}
 STAT=$?
 checkStatus ${STAT} "${VOCLOAD}/runOBOIncLoad.sh ${CONFIG_VOCLOAD}"
