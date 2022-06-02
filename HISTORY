@@ -1,3 +1,9 @@
+TAG: mcvload-6-0-19-1
+DATE: 06/02/2022
+STAFF: sc
+CHANGES: added sql update to move SO terms from MCV ldb back to SO ldb
+so that the vocload may update these terms if needed.
+
 TAG: mcvload-6-0-18-1
 DATE: 01/25/2022
 STAFF: lec
